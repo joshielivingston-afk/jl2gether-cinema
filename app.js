@@ -275,7 +275,10 @@
     return out;
   }
 
-  function getCachedRating(film){ return state.ratingCache[film.slug||slugify(film.title)] || null; }
+  function getCachedRating(film){
+    const snap=(typeof LETTERBOXD_RATINGS_SNAPSHOT!=='undefined' && LETTERBOXD_RATINGS_SNAPSHOT.ratings?.[movieKey(film)]) || null;
+    return snap || state.ratingCache[film.slug||slugify(film.title)] || null;
+  }
   function cultHeat(film) {
     const r=getCachedRating(film); if(!r) return 0;
     const five=(r.histogram||[]).find(x=>x.stars===5)?.percent||0;
@@ -293,7 +296,7 @@
           </div>
         </header>
         ${inner}
-        <div class="footer">A private taste engine. Imported Letterboxd data stays in this browser. Posters and metadata are fetched only when needed.</div>
+        <div class="footer">A private taste engine. Imported Letterboxd data stays in this browser. Posters and metadata are fetched only when needed; Letterboxd averages come from a baked snapshot refreshed from GitHub.</div>
       </div>`;
     $('#brand')?.addEventListener('click',()=>{state.route=state.viewer?'home':'landing';render();});
     $('#switchViewer')?.addEventListener('click',()=>{state.viewer=null;localStorage.removeItem('jl2.viewer');state.route='landing';render();});
@@ -455,6 +458,8 @@
           <label><input type="checkbox" id="hideWatched" ${state.hideWatched?'checked':''}> hide watched</label>
           <select id="sortSel" aria-label="Sort">
             <option value="fit" ${state.sort==='fit'?'selected':''}>best fit</option>
+            <option value="rating" ${state.sort==='rating'?'selected':''}>Letterboxd avg</option>
+            <option value="cult" ${state.sort==='cult'?'selected':''}>cult heat</option>
             <option value="year-new" ${state.sort==='year-new'?'selected':''}>newest</option>
             <option value="year-old" ${state.sort==='year-old'?'selected':''}>oldest</option>
           </select>
@@ -522,6 +527,7 @@
         <h2 class="movie-title">${f.title}</h2>
         <div class="secret-line">
           <span class="secret" id="metaSecret"><button>reveal year + director</button></span>
+          <span class="secret" id="ratingSecret"><button>reveal Letterboxd</button></span>
           ${wi.watched?`<span class="secret">✓ watched ${watchText(wi)}</span>`:''}
         </div>
         <div class="copy">${perfectSentence(f,meta)}</div>
@@ -534,6 +540,12 @@
     modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
     $('.modal-close',modal).addEventListener('click',()=>modal.remove());
     $('#metaSecret',modal).addEventListener('click',()=>{$('#metaSecret',modal).innerHTML=`${f.year} · ${f.director}`;});
+    $('#ratingSecret',modal).addEventListener('click',()=>{
+      const r=getCachedRating(f);
+      const el=$('#ratingSecret',modal);
+      el.innerHTML=r?.avg?`LB ${Number(r.avg).toFixed(2)} / 5`:'rating unavailable in snapshot';
+      renderRatingBox(f,modal,r);
+    });
     $('#anotherLike',modal).addEventListener('click',()=>{modal.remove();state.category={type:'similar',label:`Like ${f.title}`,id:f.title,tags:f.tags};state.route='results';chooseResults(f.tags,x=>x.title!==f.title);});
     enrichFilm(f).then(()=>{});
   }
