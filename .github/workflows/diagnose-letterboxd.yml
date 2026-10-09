@@ -17,18 +17,25 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - name: Fetch known rating fragment
+      - name: Fetch Letterboxd rating surfaces
         run: |
           node - <<'NODE'
-          const url='https://letterboxd.com/csi/film/parasite-2019/rating-histogram/';
-          const r=await fetch(url,{headers:{
-            'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36',
-            'Accept':'text/html,application/xhtml+xml',
-            'Accept-Language':'en-US,en;q=0.9'
-          }});
-          const text=await r.text();
-          console.log('STATUS',r.status);
-          console.log('TYPE',r.headers.get('content-type'));
-          console.log('LENGTH',text.length);
-          console.log(text.slice(0,3000));
+          const urls=[
+            'https://letterboxd.com/csi/film/parasite-2019/rating-histogram/',
+            'https://embed.letterboxd.com/film/parasite-2019/embed-histogram/?noTitle=true'
+          ];
+          for(const url of urls){
+            const r=await fetch(url,{headers:{
+              'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36',
+              'Accept':'text/html,application/xhtml+xml',
+              'Accept-Language':'en-US,en;q=0.9'
+            }});
+            const text=await r.text();
+            console.log('URL',url);
+            console.log('STATUS',r.status);
+            console.log('TYPE',r.headers.get('content-type'));
+            console.log('LENGTH',text.length);
+            console.log(text.slice(0,2500));
+            console.log('---END---');
+          }
           NODE
