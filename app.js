@@ -455,8 +455,6 @@
           <label><input type="checkbox" id="hideWatched" ${state.hideWatched?'checked':''}> hide watched</label>
           <select id="sortSel" aria-label="Sort">
             <option value="fit" ${state.sort==='fit'?'selected':''}>best fit</option>
-            <option value="rating" ${state.sort==='rating'?'selected':''}>Letterboxd avg</option>
-            <option value="cult" ${state.sort==='cult'?'selected':''}>cult heat</option>
             <option value="year-new" ${state.sort==='year-new'?'selected':''}>newest</option>
             <option value="year-old" ${state.sort==='year-old'?'selected':''}>oldest</option>
           </select>
