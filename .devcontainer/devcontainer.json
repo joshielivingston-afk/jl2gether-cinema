@@ -1,0 +1,12 @@
+{
+  "name": "JL²GETHER Cinema",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "JL²GETHER — The Back Room",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "npm install"
+}
