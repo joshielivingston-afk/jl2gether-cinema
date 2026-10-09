@@ -16,6 +16,24 @@ for(const file of ['data.js','catalog-extra.js']) {
 const FILMS=JSON.parse(vm.runInContext('JSON.stringify(FILMS)',context));
 
 function movieKey(f){return f.title+'|'+f.year;}
+const SLUG_OVERRIDES={
+  "One Flew Over the Cuckoo’s Nest|1975":"one-flew-over-the-cuckoos-nest",
+  "Love & Pop|1998":"love-pop",
+  "Singapore Sling|1990":"singapore-sling",
+  "Baby Driver|2017":"baby-driver",
+  "8½|1963":"8-half",
+  "Breaking the Waves|1996":"breaking-the-waves",
+  "Arrebato|1979":"rapture-1979",
+  "Cemetery Man|1994":"cemetery-man",
+  "Ivan’s Childhood|1962":"ivans-childhood",
+  "The Color of Pomegranates|1969":"the-color-of-pomegranates",
+  "The Act of Killing|2012":"the-act-of-killing",
+  "Miracle Mile|1988":"miracle-mile",
+  "Spirited Away|2001":"spirited-away",
+  "Birdemic: Shock and Terror|2010":"birdemic-shock-and-terror",
+  "The Last Picture Show|1971":"the-last-picture-show",
+  "Hands on a Hardbody|1997":"hands-on-a-hardbody-the-documentary"
+};
 function slugify(s){
   return String(s).toLowerCase().normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,'')
@@ -100,10 +118,11 @@ async function resolveSlugBySearch(film){
   }
 }
 async function fetchRating(film){
+  const override=SLUG_OVERRIDES[movieKey(film)]||null;
   const base=film.slug||slugify(film.title);
-  const candidates=film.slug
+  const candidates=override ? [override] : (film.slug
     ? [film.slug,film.slug+'-'+film.year]
-    : [base+'-'+film.year,base];
+    : [base+'-'+film.year,base]);
   for(const slug of [...new Set(candidates)]){
     const rating=await fetchSlugRating(slug,film);
     if(rating) return rating;
