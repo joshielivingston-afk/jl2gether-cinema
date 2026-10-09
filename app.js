@@ -577,20 +577,7 @@
     const r=wi[state.viewer]; return r?.rating?`${r.rating}★`:'';
   }
 
-  async function ensureLetterboxdRating(f){
-    const slug=f.slug||slugify(f.title); if(state.ratingCache[slug]) return state.ratingCache[slug];
-    const candidates=[slug,`${slug}-${f.year}`];
-    for(const s of candidates){
-      try{
-        const res=await fetch(`/api/letterboxd-rating?slug=${encodeURIComponent(s)}`,{cache:'no-store'});
-        if(res.ok){
-          const parsed=await res.json();
-          if(parsed?.avg){ state.ratingCache[slug]=parsed; saveJSON('jl2.lb',state.ratingCache); return parsed; }
-        }
-      }catch(e){}
-    }
-    return null;
-  }
+  async function ensureLetterboxdRating(f){ return getCachedRating(f); }
 
   function parseHistogram(html){
     const doc=new DOMParser().parseFromString(html,'text/html');
