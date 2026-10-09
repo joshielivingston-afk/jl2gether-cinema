@@ -68,20 +68,50 @@ async function readerFetch(url){
   }
   return '';
 }
+function normTitle(s){
+  return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[’']/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+}
+async function fetchSlugRating(slug,film){
+  const target='https://letterboxd.com/csi/film/'+slug+'/rating-histogram/';
+  try{
+    const text=await readerFetch('https://r.jina.ai/'+target);
+    const parsed=parseRating(text);
+    if(parsed) return {...parsed,slug,fetchedAt:new Date().toISOString()};
+  }catch(e){
+    console.warn('Fetch error',film.title,slug,e.message);
+  }
+  return null;
+}
+async function resolveSlugBySearch(film){
+  const q=encodeURIComponent(film.title);
+  try{
+    const text=await readerFetch('https://r.jina.ai/https://letterboxd.com/search/'+q+'/');
+    const re=/\[([^\]]+?) \((\d{4})\)\]\(https:\/\/letterboxd\.com\/film\/([^/]+)\/\)/g;
+    const matches=[];
+    let m;
+    while((m=re.exec(text))) matches.push({title:m[1],year:Number(m[2]),slug:m[3]});
+    const exact=matches.find(x=>x.year===Number(film.year) && normTitle(x.title)===normTitle(film.title));
+    const sameYear=matches.find(x=>x.year===Number(film.year));
+    return (exact||sameYear||null)?.slug||null;
+  }catch(e){
+    console.warn('Search error',film.title,e.message);
+    return null;
+  }
+}
 async function fetchRating(film){
   const base=film.slug||slugify(film.title);
   const candidates=film.slug
     ? [film.slug,film.slug+'-'+film.year]
     : [base+'-'+film.year,base];
   for(const slug of [...new Set(candidates)]){
-    const target='https://letterboxd.com/csi/film/'+slug+'/rating-histogram/';
-    try{
-      const text=await readerFetch('https://r.jina.ai/'+target);
-      const parsed=parseRating(text);
-      if(parsed) return {...parsed,slug,fetchedAt:new Date().toISOString()};
-    }catch(e){
-      console.warn('Fetch error',film.title,slug,e.message);
-    }
+    const rating=await fetchSlugRating(slug,film);
+    if(rating) return rating;
+  }
+  const resolved=await resolveSlugBySearch(film);
+  if(resolved && !candidates.includes(resolved)){
+    console.log('RESOLVED',film.title,film.year,'->',resolved);
+    return await fetchSlugRating(resolved,film);
   }
   return null;
 }
