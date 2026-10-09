@@ -16,12 +16,16 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - name: Test Letterboxd search resolution
+      - name: Test four stubborn rating fragments
         run: |
           node - <<'NODE'
-          const url='https://r.jina.ai/https://letterboxd.com/search/run%20lola%20run/';
-          const r=await fetch(url,{headers:{'Accept':'text/plain'}});
-          const text=await r.text();
-          console.log('STATUS',r.status,'LENGTH',text.length);
-          console.log(text.slice(0,8000));
+          const slugs=['baby-driver','8-half','cemetery-man','miracle-mile'];
+          for(const slug of slugs){
+            const url='https://r.jina.ai/https://letterboxd.com/csi/film/'+slug+'/rating-histogram/';
+            const r=await fetch(url,{headers:{'Accept':'text/plain'}});
+            const text=await r.text();
+            console.log('\nSLUG',slug,'STATUS',r.status,'LEN',text.length);
+            console.log(text.slice(0,1800));
+            await new Promise(x=>setTimeout(x,3300));
+          }
           NODE
