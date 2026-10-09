@@ -16,21 +16,12 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - name: Fetch via reader proxy
+      - name: Test Letterboxd search resolution
         run: |
           node - <<'NODE'
-          const urls=[
-            'https://r.jina.ai/http://letterboxd.com/csi/film/parasite-2019/rating-histogram/',
-            'https://r.jina.ai/https://letterboxd.com/csi/film/parasite-2019/rating-histogram/'
-          ];
-          for(const url of urls){
-            const r=await fetch(url,{headers:{'Accept':'text/plain'}});
-            const text=await r.text();
-            console.log('URL',url);
-            console.log('STATUS',r.status);
-            console.log('TYPE',r.headers.get('content-type'));
-            console.log('LENGTH',text.length);
-            console.log(text.slice(0,3500));
-            console.log('---END---');
-          }
+          const url='https://r.jina.ai/https://letterboxd.com/search/run%20lola%20run/';
+          const r=await fetch(url,{headers:{'Accept':'text/plain'}});
+          const text=await r.text();
+          console.log('STATUS',r.status,'LENGTH',text.length);
+          console.log(text.slice(0,8000));
           NODE
