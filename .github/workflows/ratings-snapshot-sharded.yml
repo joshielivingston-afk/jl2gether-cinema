@@ -1,0 +1,77 @@
+name: Snapshot Letterboxd ratings
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "data.js"
+      - "catalog-extra.js"
+      - "scripts/snapshot-shard.js"
+      - "scripts/merge-rating-shards.js"
+      - ".github/workflows/ratings-snapshot-sharded.yml"
+  workflow_dispatch:
+    inputs:
+      refresh_all:
+        description: "Refresh all ratings instead of only new/missing films"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "letterboxd-sharded-snapshot"
+  cancel-in-progress: false
+
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Fetch shard
+        env:
+          REFRESH_ALL: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_all && '1' || '0' }}
+        run: node scripts/snapshot-shard.js ${{ matrix.shard }} 20 rating-part-${{ matrix.shard }}.json
+      - name: Upload shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: rating-shard-${{ matrix.shard }}
+          path: rating-part-${{ matrix.shard }}.json
+          retention-days: 1
+
+  merge:
+    needs: shard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Download shards
+        uses: actions/download-artifact@v5
+        with:
+          pattern: rating-shard-*
+          path: rating-parts
+          merge-multiple: true
+      - name: Merge snapshot
+        run: node scripts/merge-rating-shards.js rating-parts
+      - name: Commit snapshot
+        run: |
+          if git diff --quiet -- ratings-snapshot.js; then
+            echo "No snapshot changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ratings-snapshot.js
+          git commit -m "Update Letterboxd rating snapshot"
+          git pull --rebase origin main
+          git push
