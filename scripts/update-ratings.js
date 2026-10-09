@@ -51,6 +51,13 @@ function parseHistogram(html) {
     histogram.push({stars:(i+1)/2, percent:pct, count});
     i++;
   }
+  if(!histogram.length){
+    const rows=html.split(/\r?\n/).filter(line=>/^\|\s*(?:half-★|★+½?)\s*\|/.test(line));
+    rows.forEach((line,i)=>{
+      const m=line.match(/\[([\d,.]+\s*[KMB]?)\s+\((\d+(?:\.\d+)?)%\)\]/i);
+      if(m) histogram.push({stars:(i+1)/2, percent:parseFloat(m[2]), count:parseCount(m[1])});
+    });
+  }
   return avg ? {avg, histogram} : null;
 }
 
@@ -85,7 +92,7 @@ async function fetchRating(film) {
   const candidates=[base, base + '-' + film.year];
   for(const slug of [...new Set(candidates)]){
     try{
-      const res=await fetchWithRetry('https://letterboxd.com/csi/film/' + slug + '/rating-histogram/');
+      const res=await fetchWithRetry('https://r.jina.ai/https://letterboxd.com/csi/film/' + slug + '/rating-histogram/');
       if(res && res.ok){
         const parsed=parseHistogram(await res.text());
         if(parsed) return Object.assign(parsed,{slug});
@@ -112,8 +119,8 @@ async function main(){
   console.log('Catalogue: ' + FILMS.length + ' films. Fetching ' + todo.length + ' Letterboxd ratings.');
 
   let done=0, found=0;
-  for(let i=0;i<todo.length;i+=8){
-    const batch=todo.slice(i,i+8);
+  for(let i=0;i<todo.length;i+=4){
+    const batch=todo.slice(i,i+4);
     const results=await Promise.all(batch.map(fetchRating));
     for(let j=0;j<batch.length;j++){
       const film=batch[j], rating=results[j];
@@ -126,7 +133,7 @@ async function main(){
       done++;
     }
     if(done%20===0 || done===todo.length) console.log(done + '/' + todo.length + ' checked; ' + found + ' found');
-    await sleep(220);
+    await sleep(300);
   }
 
   const valid=new Set(FILMS.map(movieKey));
