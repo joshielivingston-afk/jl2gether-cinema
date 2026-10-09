@@ -112,8 +112,8 @@ async function main(){
   console.log('Catalogue: ' + FILMS.length + ' films. Fetching ' + todo.length + ' Letterboxd ratings.');
 
   let done=0, found=0;
-  for(let i=0;i<todo.length;i+=2){
-    const batch=todo.slice(i,i+2);
+  for(let i=0;i<todo.length;i+=8){
+    const batch=todo.slice(i,i+8);
     const results=await Promise.all(batch.map(fetchRating));
     for(let j=0;j<batch.length;j++){
       const film=batch[j], rating=results[j];
@@ -126,7 +126,7 @@ async function main(){
       done++;
     }
     if(done%20===0 || done===todo.length) console.log(done + '/' + todo.length + ' checked; ' + found + ' found');
-    await sleep(275);
+    await sleep(220);
   }
 
   const valid=new Set(FILMS.map(movieKey));
