@@ -1,0 +1,13 @@
+{
+  "name": "jl2gether-cinema",
+  "version": "0.3.0",
+  "private": true,
+  "description": "The Back Room — a private cinema recommender for Joshie, Julie, and JL²GETHER.",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
