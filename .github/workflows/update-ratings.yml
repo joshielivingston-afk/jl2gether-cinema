@@ -1,0 +1,54 @@
+name: Update Letterboxd rating snapshot
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "data.js"
+      - "catalog-extra.js"
+      - "scripts/update-ratings.js"
+      - ".github/workflows/update-ratings.yml"
+  workflow_dispatch:
+    inputs:
+      refresh_all:
+        description: "Refresh every existing rating, not only missing/new films"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "letterboxd-ratings"
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Update snapshot
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.refresh_all }}" = "true" ]; then
+            node scripts/update-ratings.js --refresh-all
+          else
+            node scripts/update-ratings.js
+          fi
+      - name: Commit changed snapshot
+        run: |
+          if git diff --quiet -- ratings-snapshot.js; then
+            echo "No snapshot changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ratings-snapshot.js
+          git commit -m "Update Letterboxd rating snapshot"
+          git push
