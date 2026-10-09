@@ -1,0 +1,20 @@
+name: Cancel duplicate snapshot run
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/cancel-duplicate-snapshot.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel duplicate updater
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST repos/joshielivingston-afk/jl2gether-cinema/actions/runs/37953531592/cancel
