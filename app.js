@@ -293,7 +293,7 @@
           </div>
         </header>
         ${inner}
-        <div class="footer">A private taste engine. Imported Letterboxd data stays in this browser. Posters/metadata are fetched only when needed; live Letterboxd rating lookups are best-effort and cached locally.</div>
+        <div class="footer">A private taste engine. Imported Letterboxd data stays in this browser. Posters and metadata are fetched only when needed.</div>
       </div>`;
     $('#brand')?.addEventListener('click',()=>{state.route=state.viewer?'home':'landing';render();});
     $('#switchViewer')?.addEventListener('click',()=>{state.viewer=null;localStorage.removeItem('jl2.viewer');state.route='landing';render();});
@@ -524,7 +524,6 @@
         <h2 class="movie-title">${f.title}</h2>
         <div class="secret-line">
           <span class="secret" id="metaSecret"><button>reveal year + director</button></span>
-          <span class="secret" id="ratingSecret"><button>reveal Letterboxd</button></span>
           ${wi.watched?`<span class="secret">✓ watched ${watchText(wi)}</span>`:''}
         </div>
         <div class="copy">${perfectSentence(f,meta)}</div>
@@ -537,12 +536,6 @@
     modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
     $('.modal-close',modal).addEventListener('click',()=>modal.remove());
     $('#metaSecret',modal).addEventListener('click',()=>{$('#metaSecret',modal).innerHTML=`${f.year} · ${f.director}`;});
-    $('#ratingSecret',modal).addEventListener('click',async()=>{
-      const el=$('#ratingSecret',modal); el.textContent='loading…';
-      const r=await ensureLetterboxdRating(f);
-      el.innerHTML=r?`LB ${Number(r.avg).toFixed(2)} / 5`:'rating unavailable · run with npm';
-      renderRatingBox(f,modal,r);
-    });
     $('#anotherLike',modal).addEventListener('click',()=>{modal.remove();state.category={type:'similar',label:`Like ${f.title}`,id:f.title,tags:f.tags};state.route='results';chooseResults(f.tags,x=>x.title!==f.title);});
     enrichFilm(f).then(()=>{});
   }
