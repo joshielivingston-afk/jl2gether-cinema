@@ -8,5 +8,6 @@
       "onAutoForward": "openBrowser"
     }
   },
-  "postCreateCommand": "npm install"
+  "postCreateCommand": "npm install",
+  "postStartCommand": "nohup npm run dev > /tmp/jl2gether.log 2>&1 &"
 }
