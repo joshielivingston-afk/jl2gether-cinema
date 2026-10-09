@@ -10,6 +10,9 @@ for (const file of ['data.js', 'catalog-extra.js']) {
 
 const FILMS = JSON.parse(vm.runInContext('JSON.stringify(FILMS)', context));
 const SNAPSHOT_PATH = 'ratings-snapshot.js';
+const SLUG_OVERRIDES = {
+  '8½|1963': '8-half'
+};
 
 function slugify(s) {
   return String(s).toLowerCase().normalize('NFD')
@@ -88,7 +91,7 @@ async function fetchWithRetry(url, attempts=3) {
 }
 
 async function fetchRating(film) {
-  const base=film.slug || slugify(film.title);
+  const base=SLUG_OVERRIDES[movieKey(film)] || film.slug || slugify(film.title);
   const candidates=[base, base + '-' + film.year];
   for(const slug of [...new Set(candidates)]){
     try{
