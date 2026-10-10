@@ -735,34 +735,60 @@
     const key=movieKey(f); const meta=state.metaCache[key]||{}; const wi=watchedInfo(f);
     const role=state.resultRoles[key];
     const modal=document.createElement('div'); modal.className='modal-backdrop';
-    modal.innerHTML=`<div class="modal" role="dialog" aria-modal="true"><div class="modal-grid">
+    modal.innerHTML=`<div class="modal movie-modal" role="dialog" aria-modal="true"><div class="modal-grid">
       <div class="modal-poster">${meta.poster?`<img src="${escapeAttr(meta.poster)}" alt="${escapeAttr(f.title)} poster">`:`<div class="poster-fallback">${f.title}</div>`}</div>
       <div class="modal-body">
         <button class="modal-close" aria-label="Close">×</button>
         <div class="movie-kicker">${f.emoji} ${f.vibe}${role?` · ${role}`:''}</div>
         <h2 class="movie-title">${f.title}</h2>
-        <div class="secret-line">
-          <span class="secret" id="metaSecret"><button>reveal year + director</button></span>
-          <span class="secret" id="ratingSecret"><button>reveal Letterboxd</button></span>
+  
+        <div class="secret-line movie-meta-actions">
+          <span class="secret" id="metaSecret"><button>year + director</button></span>
+          <span class="secret" id="ratingSecret"><button>Letterboxd rating</button></span>
           ${wi.watched?`<span class="secret">✓ watched ${watchText(wi)}</span>`:''}
         </div>
+  
         <div class="copy">${perfectSentence(f,meta)}</div>
-        <div class="lobby-note">${buzzLine(f)}</div>
-        <div class="why-box"><div class="eyebrow">why the projectionist pulled it</div>${whyThisFilm(f)}</div>
-        <div class="detail-tags">${f.tags.slice(0,8).map(t=>`<span>${t}</span>`).join('')}</div>
+  
+        <div class="movie-actions">
+          <a class="ghost-btn" target="_blank" rel="noopener" href="https://letterboxd.com/film/${f.slug||slugify(f.title)}/">Letterboxd ↗</a>
+          <button class="tiny-btn" id="anotherLike">more like this</button>
+        </div>
+  
+        <div class="movie-drawers">
+          <details>
+            <summary>Why this film?</summary>
+            <div class="drawer-copy">${whyThisFilm(f)}</div>
+          </details>
+          <details>
+            <summary>Word around the lobby</summary>
+            <div class="drawer-copy">${buzzLine(f)}</div>
+          </details>
+          <details>
+            <summary>Tags</summary>
+            <div class="detail-tags compact-tags">${f.tags.slice(0,8).map(t=>`<span>${t}</span>`).join('')}</div>
+          </details>
+        </div>
+  
         <div id="ratingBox"></div>
-        <div class="file-row"><a class="ghost-btn" target="_blank" rel="noopener" href="https://letterboxd.com/film/${f.slug||slugify(f.title)}/">open on Letterboxd ↗</a><button class="tiny-btn" id="anotherLike">more like this</button></div>
-      </div></div></div>`;
+      </div>
+    </div></div>`;
     document.body.appendChild(modal);
     modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
     $('.modal-close',modal).addEventListener('click',()=>modal.remove());
     $('#metaSecret',modal).addEventListener('click',()=>{$('#metaSecret',modal).innerHTML=`${f.year} · ${f.director}`;});
     $('#ratingSecret',modal).addEventListener('click',()=>{
       const r=getCachedRating(f), el=$('#ratingSecret',modal);
-      el.innerHTML=r?.avg?`LB ${Number(r.avg).toFixed(2)} / 5`:'rating unavailable in snapshot'; renderRatingBox(f,modal,r);
+      el.innerHTML=r?.avg?`LB ${Number(r.avg).toFixed(2)} / 5`:'rating unavailable in snapshot';
+      renderRatingBox(f,modal,r);
     });
-    $('#anotherLike',modal).addEventListener('click',()=>{modal.remove();state.category={type:'similar',label:`Like ${f.title}`,id:f.title,tags:f.tags};state.route='results';chooseResults(f.tags,x=>x.title!==f.title);});
-  enrichFilm(f).then(()=>{});
+    $('#anotherLike',modal).addEventListener('click',()=>{
+      modal.remove();
+      state.category={type:'similar',label:`Like ${f.title}`,id:f.title,tags:f.tags};
+      state.route='results';
+      chooseResults(f.tags,x=>x.title!==f.title);
+    });
+    enrichFilm(f).then(()=>{});
   }
 
   function perfectSentence(f,meta){
