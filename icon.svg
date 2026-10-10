@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0d0b0a"/>
+  <rect x="70" y="124" width="372" height="264" rx="34" fill="#451713" stroke="#d4a15d" stroke-width="8"/>
+  <circle cx="70" cy="180" r="21" fill="#0d0b0a"/><circle cx="70" cy="332" r="21" fill="#0d0b0a"/>
+  <circle cx="442" cy="180" r="21" fill="#0d0b0a"/><circle cx="442" cy="332" r="21" fill="#0d0b0a"/>
+  <path d="M116 164h280M116 348h280" stroke="#d4a15d" stroke-width="5" stroke-dasharray="9 13" opacity=".65"/>
+  <text x="256" y="283" fill="#d8c8ae" text-anchor="middle" font-family="Georgia,serif" font-size="88" letter-spacing="4">JL²</text>
+  <text x="256" y="321" fill="#d4a15d" text-anchor="middle" font-family="monospace" font-size="22" letter-spacing="7">BACK ROOM</text>
+</svg>
