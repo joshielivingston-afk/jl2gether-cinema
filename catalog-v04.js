@@ -175,7 +175,7 @@ const V04_CURATED = [
   F("Gates of Heaven",1978,"Errol Morris",['70s','documentary','docs-weird','tender','philosophical'],'pet cemeteries become metaphysics','🐕',5,5),
   F("Fast, Cheap & Out of Control",1997,"Errol Morris",['90s','documentary','docs-inspire','weird','philosophical'],'four obsessions rhyme by accident','🤖',5,5),
   F("The Emperor's Naked Army Marches On",1987,"Kazuo Hara",['80s','documentary','unwatchable','angry','political'],'war crimes confronted at the doorstep','🎖',5,4),
-  F("Harlan County War",2000,"Tony Buba",['2000s','documentary','angry','political','americana'],'labor conflict on the ground','⛏',4,4),
+  F("Harlan County, USA",1976,"Barbara Kopple",['70s','documentary','angry','political','americana'],'coal miners fight a brutal strike','⛏',5,5),
   F("Grey Gardens",1975,"Albert Maysles, David Maysles, Ellen Hovde, Muffie Meyer",['70s','documentary','docs-weird','tender-weirdos','beautiful-damage'],'decaying mansion mother-daughter universe','🏚',5,5),
   F("Streetwise",1984,"Martin Bell",['80s','documentary','dark','tender','beautiful-damage'],'Seattle street kids without varnish','🛣',5,4),
   F("Titicut Follies",1967,"Frederick Wiseman",['60s','documentary','unwatchable','dark','institutional'],'institutional horror without narration','🏥',5,4),
