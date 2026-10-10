@@ -446,7 +446,7 @@
       ${viewerCard('julie','Julie')}
       ${viewerCard('both','JL²GETHER')}
     </section></main>`;
-    $$('.viewer-card').forEach(b=>b.addEventListener('click',()=>{state.viewer=b.dataset.viewer;localStorage.setItem('jl2.viewer',state.viewer);state.route='home';render();}));
+    document.querySelectorAll('.viewer-card').forEach(b=>b.addEventListener('click',()=>{state.viewer=b.dataset.viewer;localStorage.setItem('jl2.viewer',state.viewer);state.route='home';render();}));
   }
   function viewerCard(id,name){return `<button class="viewer-card viewer-card-simple" data-viewer="${id}"><span class="viewer-name">${name}</span></button>`}
 
@@ -466,7 +466,7 @@
         </div>
         <button class="route-card dealer-route" data-route="random"><span><span class="glyph">🎟</span><h3>Dealer’s choice</h3></span><span>→</span></button>
       </section>`);
-    $$('.route-card').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.route;if(r==='random'){state.route='dealer';state.dealer={strikes:0,film:null,revealed:false};renderDealer();}else{state.route=r;render();}}));
+    document.querySelectorAll('.route-card').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.route;if(r==='random'){state.route='dealer';state.dealer={strikes:0,film:null,revealed:false};renderDealer();}else{state.route=r;render();}}));
   }
   function routeCard(id,glyph,title,desc,klass=''){return `<button class="route-card ${klass}" data-route="${id}"><span class="glyph">${glyph}</span><h3>${title}</h3></button>`}
 
@@ -535,14 +535,14 @@
       <div class="choice-grid">${anchors.map(t=>`<button class="choice similar-anchor" data-id="${escapeAttr(t)}"><span class="emoji">≈</span><strong>${t}</strong></button>`).join('')}</div>
     </section>`);
     const open=id=>openChoice('similar',id);
-    $$('.similar-anchor').forEach(btn=>btn.addEventListener('click',()=>open(btn.dataset.id)));
+    document.querySelectorAll('.similar-anchor').forEach(btn=>btn.addEventListener('click',()=>open(btn.dataset.id)));
     const input=$('#similarSearch'), results=$('#similarSearchResults');
     input.addEventListener('input',()=>{
       const q=input.value.trim().toLowerCase();
       if(q.length<2){results.innerHTML='';return;}
       const hits=FILMS.filter(f=>`${f.title} ${f.director} ${f.year}`.toLowerCase().includes(q)).slice(0,20);
       results.innerHTML=hits.map(f=>`<button class="search-hit" data-key="${escapeAttr(movieKey(f))}"><strong>${f.title}</strong><span>${f.year} · ${f.director}</span></button>`).join('')||'<div class="privacy-note">Nothing in this room matches.</div>';
-      $$('.search-hit',results).forEach(btn=>btn.addEventListener('click',()=>{const f=FILMS.find(x=>movieKey(x)===btn.dataset.key);if(f)open(f.title);}));
+      results.querySelectorAll('.search-hit').forEach(btn=>btn.addEventListener('click',()=>{const f=FILMS.find(x=>movieKey(x)===btn.dataset.key);if(f)open(f.title);}));
     });
     setTimeout(()=>input.focus({preventScroll:true}),0);
   }
@@ -728,8 +728,8 @@
     </div><div class="reaction-reasons">
       ${[['atmosphere','loved the atmosphere'],['more-like-this','more like this'],['too-slow','too slow'],['too-obvious','too obvious'],['wrong-mood','wrong mood']].map(([id,label])=>`<button class="reason-btn ${reasons.has(id)?'active':''}" data-reason="${id}">${label}</button>`).join('')}
     </div><small>Saved only in this browser. “Wrong mood” does not become a permanent dislike.</small></div>`;
-    $$('.reaction-btn',box).forEach(btn=>btn.addEventListener('click',()=>{storeReaction(f,btn.dataset.reaction);renderReactionPanel(f,modal);}));
-    $$('.reason-btn',box).forEach(btn=>btn.addEventListener('click',()=>{toggleReactionReason(f,btn.dataset.reason);renderReactionPanel(f,modal);}));
+    box.querySelectorAll('.reaction-btn').forEach(btn=>btn.addEventListener('click',()=>{storeReaction(f,btn.dataset.reaction);renderReactionPanel(f,modal);}));
+    box.querySelectorAll('.reason-btn').forEach(btn=>btn.addEventListener('click',()=>{toggleReactionReason(f,btn.dataset.reason);renderReactionPanel(f,modal);}));
   }
 
   function openMovie(f){
