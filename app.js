@@ -471,8 +471,9 @@
   function routeCard(id,glyph,title,desc,klass=''){return `<button class="route-card ${klass}" data-route="${id}"><span class="glyph">${glyph}</span><h3>${title}</h3></button>`}
 
   function renderChoices(type,title,subtitle,items){
-    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>${title}</h2></div></div><div class="choice-grid">${items.map(([id,label,emoji])=>`<button class="choice" data-id="${escapeAttr(id)}"><span class="emoji">${emoji||'•'}</span><strong>${label}</strong></button>`).join('')}</div></section>`);
-    $$('.choice').forEach(btn=>btn.addEventListener('click',()=>openChoice(type,btn.dataset.id)));
+    const showNotes=type==='mood'||type==='vibe';
+    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>${title}</h2></div></div><div class="choice-grid">${items.map(([id,label,emoji,note])=>`<button class="choice" data-id="${escapeAttr(id)}"><span class="emoji">${emoji||'•'}</span><strong>${label}</strong>${showNotes&&note?`<small>${note}</small>`:''}</button>`).join('')}</div></section>`);
+    $('.choice').forEach(btn=>btn.addEventListener('click',()=>openChoice(type,btn.dataset.id)));
   }
 
   function openChoice(type,id){
@@ -700,7 +701,7 @@
 
   function movieKey(f){ return `${f.title}|${f.year}`; }
   function bindMovieCards(){
-    $$$('.poster-card').forEach(card=>card.addEventListener('click',()=>{const f=FILMS.find(x=>movieKey(x)===card.dataset.key); if(f)openMovie(f);}));
+    $('.poster-card').forEach(card=>card.addEventListener('click',()=>{const f=FILMS.find(x=>movieKey(x)===card.dataset.key); if(f)openMovie(f);}));
   }
 
   async function enrichFilm(f){
