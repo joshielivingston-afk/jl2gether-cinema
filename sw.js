@@ -1,4 +1,4 @@
-const CACHE='jl2gether-v04-2';
+const CACHE='jl2gether-v04-3';
 const CORE=['./','./index.html','./styles.css','./data.js','./catalog-extra.js','./catalog-v04.js','./profile-data.js','./ratings-snapshot.js','./app.js','./pwa.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
