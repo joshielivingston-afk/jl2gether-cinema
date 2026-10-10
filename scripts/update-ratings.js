@@ -4,7 +4,7 @@ const vm = require('vm');
 const context = { console };
 vm.createContext(context);
 
-for (const file of ['data.js', 'catalog-extra.js']) {
+for (const file of ['data.js', 'catalog-extra.js', 'catalog-v04.js']) {
   vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
 }
 
