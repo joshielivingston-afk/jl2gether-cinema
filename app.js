@@ -19,7 +19,11 @@
     metaCache: loadJSON('jl2.meta', {}),
     ratingCache: loadJSON('jl2.lb', {}),
     resultSeed: Math.random(),
-    seenHistory: (() => { try { return JSON.parse(sessionStorage.getItem('jl2.seen')||'{}'); } catch { return {}; } })()
+    seenHistory: (() => { try { return JSON.parse(sessionStorage.getItem('jl2.seen')||'{}'); } catch { return {}; } })(),
+    reactions: loadJSON('jl2.reactions', {}),
+    resultRoles: {},
+    moodSelection: [],
+    dealer: null
   };
 
   function loadJSON(key, fallback) {
@@ -120,7 +124,108 @@
     return -.8;
   }
 
-  function nostalgiaMode(){ return ['nostalgic','homesick'].includes(state.category?.id); }
+  function nostalgiaMode(){ const ids=state.category?.moodIds||[state.category?.id]; return ids.some(id=>['nostalgic','homesick'].includes(id)); }
+
+  function reactionKey(film, viewer=state.viewer){ return `${viewer||'none'}|${movieKey(film)}`; }
+  
+  function getReaction(film){ return state.reactions[reactionKey(film)] || null; }
+  
+  function storeReaction(film, value){
+    const key=reactionKey(film), old=state.reactions[key]||{};
+    state.reactions[key]={...old,viewer:state.viewer,filmKey:movieKey(film),tags:[...(film.tags||[])],value,updatedAt:new Date().toISOString()};
+    saveJSON('jl2.reactions',state.reactions);
+  }
+  
+  function toggleReactionReason(film, reason){
+    const key=reactionKey(film), old=state.reactions[key]||{viewer:state.viewer,filmKey:movieKey(film),tags:[...(film.tags||[])],value:null};
+    const reasons=new Set(old.reasons||[]);
+    if(reasons.has(reason))reasons.delete(reason);else reasons.add(reason);
+    state.reactions[key]={...old,reasons:[...reasons],updatedAt:new Date().toISOString()};
+    saveJSON('jl2.reactions',state.reactions);
+  }
+  
+  function feedbackScore(film){
+    const weights={loved:1.55,good:.65,meh:-.45,bad:-1.5};
+    let score=0;
+    for(const r of Object.values(state.reactions||{})){
+      if(r.viewer!==state.viewer || !r.value || r.filmKey===movieKey(film))continue;
+      const overlap=(film.tags||[]).filter(t=>(r.tags||[]).includes(t)).length;
+      score+=overlap*(weights[r.value]||0)*.42;
+      if((r.reasons||[]).includes('more-like-this'))score+=overlap*.55;
+      if((r.reasons||[]).includes('atmosphere')){
+        const atmospheric=new Set(['liminal','dream','night-city','beautiful-damage','esoteric','underground','cosmic','surreal']);
+        score+=(film.tags||[]).filter(t=>atmospheric.has(t)&&(r.tags||[]).includes(t)).length*.45;
+      }
+      if((r.reasons||[]).includes('too-slow') && hasAny(film,['slow','meditative','liminal']))score-=.8;
+      if((r.reasons||[]).includes('too-obvious') && (getCachedRating(film)?.avg||0)>=4.05)score-=.35;
+      // "wrong mood" is deliberately not learned as a permanent dislike.
+    }
+    return Math.max(-6,Math.min(6,score));
+  }
+  
+  function individualFit(who,film,tags=[]){
+    const r=profileRecord(who,film);
+    let score=(film.affinity?.[who]||0)*1.2+recordStrength(who,film)*1.15;
+    for(const t of tags) if(film.tags.includes(t)) score+=2.5;
+    if(!r?.watched)score+=1.1;
+    if(r?.watched && Number(r.rating||0)<3)score-=5;
+    if(r?.favorite)score+=2;
+    return score;
+  }
+  
+  function pickJointRoleFilms(pool,tags){
+    const roles=[
+      ['The Bridge',f=>Math.min(individualFit('josh',f,tags),individualFit('julie',f,tags))*1.2 + (profileRecord('josh',f)?.watched&&profileRecord('julie',f)?.watched?1:0)],
+      ['Joshie’s Case for Julie',f=>individualFit('josh',f,tags)*1.2+individualFit('julie',f,tags)*.28+(Number(profileRecord('josh',f)?.rating||0)>=4?2.2:0)+(!profileRecord('julie',f)?.watched?1:0)],
+      ['Julie’s Case for Joshie',f=>individualFit('julie',f,tags)*1.2+individualFit('josh',f,tags)*.28+(Number(profileRecord('julie',f)?.rating||0)>=4?2.2:0)+(!profileRecord('josh',f)?.watched?1:0)],
+      ['Mutual Wildcard',f=>(!profileRecord('josh',f)?.watched&&!profileRecord('julie',f)?.watched?2.5:0)+hasAny(f,['weird','underground','esoteric','dream','experimental'])*2+(individualFit('josh',f,tags)+individualFit('julie',f,tags))*.3],
+      ['Safest Bet',f=>individualFit('josh',f,tags)+individualFit('julie',f,tags)+(getCachedRating(f)?.avg||3.4)*.55]
+    ];
+    const chosen=[], used=new Set(); state.resultRoles={};
+    for(const [role,fn] of roles){
+      const ranked=pool.filter(f=>!used.has(movieKey(f))).map(f=>({f,score:fn(f)+Math.random()*.8})).sort((a,b)=>b.score-a.score);
+      if(!ranked.length)continue;
+      const top=ranked.slice(0,Math.min(5,ranked.length));
+      const pick=top[Math.floor(Math.random()*Math.min(3,top.length))]?.f||ranked[0].f;
+      chosen.push(pick); used.add(movieKey(pick)); state.resultRoles[movieKey(pick)]=role;
+    }
+    return chosen;
+  }
+  
+  function referenceFilms(who,film){
+    return FILMS.map(x=>{
+      if(x===film)return null;
+      const r=profileRecord(who,x);
+      if(!r?.watched || (!r.liked && Number(r.rating||0)<4 && !r.favorite))return null;
+      const overlap=(x.tags||[]).filter(t=>(film.tags||[]).includes(t)).length;
+      if(!overlap)return null;
+      return {film:x,record:r,score:overlap*2+recordStrength(who,x)};
+    }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,2);
+  }
+  
+  function whyThisFilm(f){
+    const role=state.resultRoles[movieKey(f)];
+    const roleText={
+      'The Bridge':'This is the bridge pick: unusually strong terrain for both of you.',
+      'Joshie’s Case for Julie':'This is Joshie’s case for Julie: it leans toward Joshie’s proven territory without abandoning Julie’s signal.',
+      'Julie’s Case for Joshie':'This is Julie’s case for Joshie: it leans toward Julie’s proven territory while keeping a foothold in Joshie’s.',
+      'Mutual Wildcard':'This is the mutual wildcard: less proven, more exploratory, but still connected to both profiles.',
+      'Safest Bet':'This is the safest bet: the broadest combined fit in this batch.'
+    };
+    const describe=(who,label)=>{
+      const refs=referenceFilms(who,f);
+      if(!refs.length)return null;
+      return `${label}: ${refs.map(x=>`${x.film.title}${x.record.rating?` (${x.record.rating}★)`:''}`).join(' + ')}`;
+    };
+    if(state.viewer==='both'){
+      const bits=[roleText[role],describe('josh','Joshie trail'),describe('julie','Julie trail')].filter(Boolean);
+      return bits.join(' ');
+    }
+    const refs=referenceFilms(state.viewer,f);
+    const who=state.viewer==='josh'?'Joshie':'Julie';
+    if(refs.length) return `${who} trail: ${refs.map(x=>`${x.film.title}${x.record.rating?` (${x.record.rating}★)`:''}`).join(' + ')} share the strongest taste signals with this one.`;
+    return `This one rose through ${who}’s profile from its ${f.tags.slice(0,3).join(', ')} signals rather than general popularity.`;
+  }
 
   function personalScore(film, desiredTags=[]) {
     const profile = getProfile();
@@ -173,6 +278,7 @@
         if(r?.watchlist)s+=1.2;
       }
     }
+    s += feedbackScore(film);
     return s;
   }
 
@@ -211,7 +317,7 @@
     const c=state.category;
     if(!c || c.type==='random' || c.type==='decade' || c.type==='director') return true;
     if(c.type==='vibe') return (VIBE_GATES[c.id] || (x=>hasAny(x,tags)))(film);
-    if(c.type==='mood') return hasAny(film,tags);
+    if(c.type==='mood') { const groups=c.tagGroups||[]; return groups.length>1 ? groups.every(g=>hasAny(film,g)) : hasAny(film,tags); }
     if(c.type==='similar') {
       const anchor=FILMS.find(x=>x.title===c.id);
       if(!anchor) return true;
@@ -229,32 +335,38 @@
 
   function chooseResults(tags, predicate=()=>true) {
     let pool = FILMS.filter(predicate).filter(f=>relevantToCategory(f,tags));
+    if(pool.length<5 && state.category?.type==='mood' && (state.category?.tagGroups||[]).length>1){
+      pool=FILMS.filter(predicate).filter(f=>hasAny(f,tags));
+    }
     if (state.hideWatched) pool = pool.filter(f=>!watchedInfo(f).watched);
-
+  
     const recent = new Set(state.seenHistory[historyKey()]||[]);
     let fresh = pool.filter(f=>!recent.has(movieKey(f)));
-    // Only recycle recent films when the shelf is genuinely running low.
     if (fresh.length < 5) {
       const keepLast = new Set((state.seenHistory[historyKey()]||[]).slice(0,5));
       fresh = pool.filter(f=>!keepLast.has(movieKey(f)));
     }
     if (fresh.length < 5) fresh = pool;
-
-    let scored = fresh.map(f=>({film:f,score:personalScore(f,tags)}));
-    scored.sort((a,b)=>b.score-a.score);
-    // Sample from a strong-but-broad window instead of always selecting the top five.
-    const windowSize=Math.min(scored.length, Math.max(18, Math.ceil(scored.length*.42)));
-    const window=scored.slice(0,windowSize).map(x=>x.film);
-    let chosen = diversify(weightedShuffle(window, tags),5);
-
+  
+    let chosen;
+    state.resultRoles={};
+    if(state.viewer==='both' && fresh.length>=5){
+      chosen=pickJointRoleFilms(fresh,tags);
+    } else {
+      let scored = fresh.map(f=>({film:f,score:personalScore(f,tags)})).sort((a,b)=>b.score-a.score);
+      const windowSize=Math.min(scored.length, Math.max(18, Math.ceil(scored.length*.42)));
+      const window=scored.slice(0,windowSize).map(x=>x.film);
+      chosen=diversify(weightedShuffle(window, tags),5);
+    }
+  
     if (state.sort === 'rating') chosen.sort((a,b)=>(getCachedRating(b)?.avg||0)-(getCachedRating(a)?.avg||0));
     if (state.sort === 'cult') chosen.sort((a,b)=>cultHeat(b)-cultHeat(a));
     if (state.sort === 'year-new') chosen.sort((a,b)=>b.year-a.year);
     if (state.sort === 'year-old') chosen.sort((a,b)=>a.year-b.year);
-    state.results = chosen;
-    rememberResults(chosen);
+    state.results = chosen.slice(0,5);
+    rememberResults(state.results);
     renderResults();
-    chosen.forEach(enrichFilm);
+    state.results.forEach(enrichFilm);
   }
 
   function weightedShuffle(pool,tags){
@@ -335,9 +447,29 @@
         </div>
         <button class="route-card dealer-route" data-route="random"><span><span class="glyph">🎟</span><h3>Dealer’s choice</h3><p>Give the projectionist the keys.</p></span><span>→</span></button>
       </section>`);
-    $$('.route-card').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.route;if(r==='random'){state.route='results';state.category={type:'random',label:'Dealer’s choice',tags:[]};chooseResults([]);}else{state.route=r;render();}}));
+    $$('.route-card').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.route;if(r==='random'){state.route='dealer';state.dealer={strikes:0,film:null,revealed:false};renderDealer();}else{state.route=r;render();}}));
   }
   function routeCard(id,glyph,title,desc,klass=''){return `<button class="route-card ${klass}" data-route="${id}"><span class="glyph">${glyph}</span><h3>${title}</h3><p>${desc}</p></button>`}
+
+  function renderMoodMixer(){
+    const selected=state.moodSelection||[];
+    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>What are you feeling?</h2></div><p>Pick one mood, or collide two of them. The stranger intersections are often the good ones.</p></div>
+      <div class="choice-grid">${MOODS.map(([id,label,emoji,note])=>`<button class="choice mood-choice ${selected.includes(id)?'selected':''}" data-id="${escapeAttr(id)}"><span class="emoji">${emoji}</span><strong>${label}</strong><small>${note}</small></button>`).join('')}</div>
+      <div class="mood-mixer-bar"><span id="moodMixReadout">${selected.length?selected.map(id=>MOODS.find(x=>x[0]===id)?.[1]).join(' + '):'choose one or two'}</span><button class="primary-btn" id="enterMood" ${selected.length?'':'disabled'}>enter this mood →</button></div>
+    </section>`);
+    $('.mood-choice').forEach(btn=>btn.addEventListener('click',()=>{
+      const id=btn.dataset.id, arr=[...(state.moodSelection||[])], i=arr.indexOf(id);
+      if(i>=0)arr.splice(i,1); else { if(arr.length>=2)arr.shift(); arr.push(id); }
+      state.moodSelection=arr; renderMoodMixer();
+    }));
+    $('#enterMood')?.addEventListener('click',()=>{
+      const ids=[...(state.moodSelection||[])]; if(!ids.length)return;
+      const items=ids.map(id=>MOODS.find(x=>x[0]===id)).filter(Boolean);
+      const groups=ids.map(id=>MOOD_MAP[id]||[]);
+      state.category={type:'mood',label:items.map(x=>x[1]).join(' + '),id:ids.join('+'),moodIds:ids,tagGroups:groups,tags:[...new Set(groups.flat())]};
+      state.route='results'; chooseResults(state.category.tags);
+    });
+  }
 
   function renderChoices(type,title,subtitle,items){
     renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>${title}</h2></div><p>${subtitle}</p></div><div class="choice-grid">${items.map(([id,label,emoji,note])=>`<button class="choice" data-id="${escapeAttr(id)}"><span class="emoji">${emoji||'•'}</span><strong>${label}</strong><small>${note||''}</small></button>`).join('')}</div></section>`);
@@ -397,7 +529,22 @@
 
   function renderSimilar(){
     const anchors=dynamicAnchors();
-    renderChoices('similar','Start from a movie','Twenty high-signal reference films from this profile, deliberately spread across different decades, directors and kinds of obsession. They reshuffle each time you enter.',anchors.map(t=>[t,t,'≈','find the adjacent frequency']));
+    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>Start from a movie</h2></div><p>Use a familiar doorway, or search the entire catalogue for an adjacent frequency.</p></div>
+      <div class="similar-search"><input id="similarSearch" type="search" autocomplete="off" placeholder="search title, director, year…"><div id="similarSearchResults" class="similar-results"></div></div>
+      <div class="section-title"><h3>High-signal doorways</h3><div class="rule"></div></div>
+      <div class="choice-grid">${anchors.map(t=>`<button class="choice similar-anchor" data-id="${escapeAttr(t)}"><span class="emoji">≈</span><strong>${t}</strong><small>find the adjacent frequency</small></button>`).join('')}</div>
+    </section>`);
+    const open=id=>openChoice('similar',id);
+    $('.similar-anchor').forEach(btn=>btn.addEventListener('click',()=>open(btn.dataset.id)));
+    const input=$('#similarSearch'), results=$('#similarSearchResults');
+    input.addEventListener('input',()=>{
+      const q=input.value.trim().toLowerCase();
+      if(q.length<2){results.innerHTML='';return;}
+      const hits=FILMS.filter(f=>`${f.title} ${f.director} ${f.year}`.toLowerCase().includes(q)).slice(0,20);
+      results.innerHTML=hits.map(f=>`<button class="search-hit" data-key="${escapeAttr(movieKey(f))}"><strong>${f.title}</strong><span>${f.year} · ${f.director}</span></button>`).join('')||'<div class="privacy-note">Nothing in this room matches.</div>';
+      $('.search-hit',results).forEach(btn=>btn.addEventListener('click',()=>{const f=FILMS.find(x=>movieKey(x)===btn.dataset.key);if(f)open(f.title);}));
+    });
+    setTimeout(()=>input.focus({preventScroll:true}),0);
   }
 
   function directorMatches(f,d){
@@ -449,6 +596,29 @@
     renderChoices('director','Director corridors','Ranked from your actual 2026 Letterboxd history where the local catalogue has enough films to make a proper corridor.',ranked.map(x=>[x.d,x.d,'🎬',`${x.count} in the room · ${x.detail}`]));
   }
 
+  function pickDealerFilm(exclude=null){
+    const recent=new Set(state.seenHistory['dealer']||[]);
+    let pool=FILMS.filter(f=>movieKey(f)!==exclude&&!recent.has(movieKey(f)));
+    if(pool.length<12)pool=FILMS.filter(f=>movieKey(f)!==exclude);
+    const ranked=pool.map(f=>({f,score:personalScore(f,[])+Math.random()*3})).sort((a,b)=>b.score-a.score).slice(0,35);
+    return ranked[Math.floor(Math.random()*Math.min(12,ranked.length))]?.f||ranked[0]?.f||FILMS[0];
+  }
+  
+  function renderDealer(){
+    if(!state.dealer)state.dealer={strikes:0,film:null,revealed:false};
+    if(!state.dealer.film)state.dealer.film=pickDealerFilm();
+    const f=state.dealer.film, meta=state.metaCache[movieKey(f)]||{}, left=Math.max(0,3-state.dealer.strikes);
+    renderShell(`<section class="dealer-room"><div class="eyebrow">dealer’s choice · ${getProfile().label}</div><h2>${state.dealer.revealed?'The projectionist has spoken.':'One sealed ticket.'}</h2>
+      ${state.dealer.revealed?`<div class="dealer-reveal">${meta.poster?`<img src="${escapeAttr(meta.poster)}" alt="${escapeAttr(f.title)} poster">`:`<div class="poster-fallback">${f.title}</div>`}<div><div class="movie-kicker">${f.emoji} ${f.vibe}</div><h3>${f.title}</h3><p>${whyThisFilm(f)}</p><div class="dealer-actions"><button class="primary-btn" id="acceptDealer">accept fate</button>${left>0?`<button class="ghost-btn" id="burnDealer">burn ticket · ${left} reject${left===1?'':'s'} left</button>`:'<span class="secret">no refunds left</span>'}</div></div></div>`
+      :`<button class="sealed-ticket" id="breakSeal"><span>JL²GETHER · THE BACK ROOM</span><strong>NO REFUNDS</strong><small>break seal</small></button><p class="privacy-note">You may burn three tickets. The fourth one is between you and God.</p>`}
+      <button class="ghost-btn dealer-leave" id="leaveDealer">← leave the booth</button>
+    </section>`);
+    $('#leaveDealer').addEventListener('click',()=>{state.route='home';state.dealer=null;render();});
+    $('#breakSeal')?.addEventListener('click',()=>{state.dealer.revealed=true;state.seenHistory['dealer']=[movieKey(f),...(state.seenHistory['dealer']||[])].slice(0,30);sessionStorage.setItem('jl2.seen',JSON.stringify(state.seenHistory));Promise.resolve(enrichFilm(f)).then(()=>{if(state.route==='dealer')renderDealer();});});
+    $('#acceptDealer')?.addEventListener('click',()=>openMovie(f));
+    $('#burnDealer')?.addEventListener('click',()=>{state.dealer.strikes++;const old=movieKey(f);state.dealer.film=pickDealerFilm(old);state.dealer.revealed=false;renderDealer();});
+  }
+
   function renderResults(){
     const title=state.category?.label||'Tonight';
     renderShell(`<section class="room">
@@ -491,6 +661,7 @@
     return `<article class="poster-card" data-key="${escapeAttr(key)}" title="${escapeAttr(f.title)}">
       ${img?`<img src="${escapeAttr(img)}" alt="${escapeAttr(f.title)} poster" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'poster-fallback',textContent:${JSON.stringify(f.title)}}))">`:`<div class="poster-fallback">${f.title}</div>`}
       ${wi.watched?'<i class="watched-dot" title="watched"></i>':''}
+      ${state.resultRoles[key]?`<div class="role-badge">${state.resultRoles[key]}</div>`:''}
       <div class="spark"><span>${f.emoji} ${f.vibe}</span></div>
     </article>`;
   }
@@ -516,14 +687,27 @@
     } catch(e) { /* fallback stays */ }
   }
 
+  function renderReactionPanel(f,modal){
+    const r=getReaction(f), reasons=new Set(r?.reasons||[]);
+    const box=$('#reactionBox',modal); if(!box)return;
+    box.innerHTML=`<div class="reaction-box"><div class="eyebrow">after the screening · teach the projectionist</div><div class="reaction-main">
+      ${[['loved','Loved it'],['good','Good'],['meh','Meh'],['bad','Bad pick']].map(([id,label])=>`<button class="reaction-btn ${r?.value===id?'active':''}" data-reaction="${id}">${label}</button>`).join('')}
+    </div><div class="reaction-reasons">
+      ${[['atmosphere','loved the atmosphere'],['more-like-this','more like this'],['too-slow','too slow'],['too-obvious','too obvious'],['wrong-mood','wrong mood']].map(([id,label])=>`<button class="reason-btn ${reasons.has(id)?'active':''}" data-reason="${id}">${label}</button>`).join('')}
+    </div><small>Saved only in this browser. “Wrong mood” does not become a permanent dislike.</small></div>`;
+    $('.reaction-btn',box).forEach(btn=>btn.addEventListener('click',()=>{storeReaction(f,btn.dataset.reaction);renderReactionPanel(f,modal);}));
+    $('.reason-btn',box).forEach(btn=>btn.addEventListener('click',()=>{toggleReactionReason(f,btn.dataset.reason);renderReactionPanel(f,modal);}));
+  }
+
   function openMovie(f){
-    const key=movieKey(f); const meta=state.metaCache[key]||{}; const wi=watchedInfo(f); const rating=getCachedRating(f);
+    const key=movieKey(f); const meta=state.metaCache[key]||{}; const wi=watchedInfo(f);
+    const role=state.resultRoles[key];
     const modal=document.createElement('div'); modal.className='modal-backdrop';
     modal.innerHTML=`<div class="modal" role="dialog" aria-modal="true"><div class="modal-grid">
       <div class="modal-poster">${meta.poster?`<img src="${escapeAttr(meta.poster)}" alt="${escapeAttr(f.title)} poster">`:`<div class="poster-fallback">${f.title}</div>`}</div>
       <div class="modal-body">
         <button class="modal-close" aria-label="Close">×</button>
-        <div class="movie-kicker">${f.emoji} ${f.vibe}</div>
+        <div class="movie-kicker">${f.emoji} ${f.vibe}${role?` · ${role}`:''}</div>
         <h2 class="movie-title">${f.title}</h2>
         <div class="secret-line">
           <span class="secret" id="metaSecret"><button>reveal year + director</button></span>
@@ -532,8 +716,9 @@
         </div>
         <div class="copy">${perfectSentence(f,meta)}</div>
         <div class="lobby-note">${buzzLine(f)}</div>
+        <div class="why-box"><div class="eyebrow">why the projectionist pulled it</div>${whyThisFilm(f)}</div>
         <div class="detail-tags">${f.tags.slice(0,8).map(t=>`<span>${t}</span>`).join('')}</div>
-        <div id="ratingBox"></div>
+        <div id="ratingBox"></div><div id="reactionBox"></div>
         <div class="file-row"><a class="ghost-btn" target="_blank" rel="noopener" href="https://letterboxd.com/film/${f.slug||slugify(f.title)}/">open on Letterboxd ↗</a><button class="tiny-btn" id="anotherLike">more like this</button></div>
       </div></div></div>`;
     document.body.appendChild(modal);
@@ -541,13 +726,11 @@
     $('.modal-close',modal).addEventListener('click',()=>modal.remove());
     $('#metaSecret',modal).addEventListener('click',()=>{$('#metaSecret',modal).innerHTML=`${f.year} · ${f.director}`;});
     $('#ratingSecret',modal).addEventListener('click',()=>{
-      const r=getCachedRating(f);
-      const el=$('#ratingSecret',modal);
-      el.innerHTML=r?.avg?`LB ${Number(r.avg).toFixed(2)} / 5`:'rating unavailable in snapshot';
-      renderRatingBox(f,modal,r);
+      const r=getCachedRating(f), el=$('#ratingSecret',modal);
+      el.innerHTML=r?.avg?`LB ${Number(r.avg).toFixed(2)} / 5`:'rating unavailable in snapshot'; renderRatingBox(f,modal,r);
     });
     $('#anotherLike',modal).addEventListener('click',()=>{modal.remove();state.category={type:'similar',label:`Like ${f.title}`,id:f.title,tags:f.tags};state.route='results';chooseResults(f.tags,x=>x.title!==f.title);});
-    enrichFilm(f).then(()=>{});
+    renderReactionPanel(f,modal); enrichFilm(f).then(()=>{});
   }
 
   function perfectSentence(f,meta){
@@ -731,12 +914,13 @@
     if(!state.viewer && state.route!=='settings') state.route='landing';
     if(state.route==='landing') return renderLanding();
     if(state.route==='home') return renderHome();
-    if(state.route==='mood') return renderChoices('mood','What are you feeling?','Mood is not genre. It is what you need the movie to do to your nervous system.',MOODS);
+    if(state.route==='mood') return renderMoodMixer();
     if(state.route==='vibe') return renderChoices('vibe','Choose a shelf','These are hand-labeled rooms, not database genres.',VIBES);
     if(state.route==='similar') return renderSimilar();
     if(state.route==='decade') return renderChoices('decade','Choose a decade','The decade is only the doorway; your taste still decides what is waiting behind it.',DECADES.map(d=>{const start=Number(d.slice(0,4));const n=FILMS.filter(f=>f.year>=start&&f.year<start+10).length;return [d,d,'⌛',`${n} films · filtered through your profile`];}));
     if(state.route==='director') return renderDirectors();
     if(state.route==='results') return renderResults();
+    if(state.route==='dealer') return renderDealer();
     if(state.route==='settings') return renderSettings();
     return renderHome();
   }
