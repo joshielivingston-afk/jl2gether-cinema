@@ -181,13 +181,13 @@
       ['Mutual Wildcard',f=>(!profileRecord('josh',f)?.watched&&!profileRecord('julie',f)?.watched?2.5:0)+hasAny(f,['weird','underground','esoteric','dream','experimental'])*2+(individualFit('josh',f,tags)+individualFit('julie',f,tags))*.3],
       ['Safest Bet',f=>individualFit('josh',f,tags)+individualFit('julie',f,tags)+(getCachedRating(f)?.avg||3.4)*.55]
     ];
-    const chosen=[], used=new Set(); state.resultRoles={};
+    const chosen=[], used=new Set(), usedDecades=new Set(); state.resultRoles={};
     for(const [role,fn] of roles){
-      const ranked=pool.filter(f=>!used.has(movieKey(f))).map(f=>({f,score:fn(f)+Math.random()*.8})).sort((a,b)=>b.score-a.score);
+      let candidates=pool.filter(f=>!used.has(movieKey(f))); const freshDecades=candidates.filter(f=>!usedDecades.has(Math.floor(f.year/10)*10)); if(freshDecades.length)candidates=freshDecades; const ranked=candidates.map(f=>({f,score:fn(f)+Math.random()*.8})).sort((a,b)=>b.score-a.score);
       if(!ranked.length)continue;
       const top=ranked.slice(0,Math.min(5,ranked.length));
       const pick=top[Math.floor(Math.random()*Math.min(3,top.length))]?.f||ranked[0].f;
-      chosen.push(pick); used.add(movieKey(pick)); state.resultRoles[movieKey(pick)]=role;
+      chosen.push(pick); used.add(movieKey(pick)); usedDecades.add(Math.floor(pick.year/10)*10); state.resultRoles[movieKey(pick)]=role;
     }
     return chosen;
   }
@@ -231,7 +231,7 @@
     const profile = getProfile();
     let s = 0;
     // Category relevance is gated elsewhere; taste only ranks films inside the room.
-    for (const t of film.tags) s += (profile.taste[t] || 0) * .43;
+    for (const t of film.tags) if(!/^(?:19|20)?\d0s$/.test(t)) s += (profile.taste[t] || 0) * .43;
     for (const t of desiredTags) if (film.tags.includes(t)) s += 4.4;
 
     if (state.viewer === 'both') {
@@ -278,7 +278,6 @@
         if(r?.watchlist)s+=1.2;
       }
     }
-    s += feedbackScore(film);
     return s;
   }
 
@@ -355,7 +354,7 @@
     } else {
       let scored = fresh.map(f=>({film:f,score:personalScore(f,tags)})).sort((a,b)=>b.score-a.score);
       const windowSize=Math.min(scored.length, Math.max(18, Math.ceil(scored.length*.42)));
-      const window=scored.slice(0,windowSize).map(x=>x.film);
+      const window=balancedByDecade(scored,windowSize);
       chosen=diversify(weightedShuffle(window, tags),5);
     }
   
@@ -369,6 +368,30 @@
     state.results.forEach(enrichFilm);
   }
 
+
+  function balancedByDecade(scored,limit){
+    if(state.category?.type==='decade') return scored.slice(0,limit).map(x=>x.film);
+    const groups=new Map();
+    for(const item of scored){
+      const d=Math.floor(item.film.year/10)*10;
+      if(!groups.has(d))groups.set(d,[]);
+      groups.get(d).push(item.film);
+    }
+    const decades=seededShuffle([...groups.keys()]);
+    const out=[];
+    let pass=0;
+    while(out.length<limit){
+      let added=false;
+      for(const d of decades){
+        const film=groups.get(d)?.[pass];
+        if(film){out.push(film);added=true;if(out.length>=limit)break;}
+      }
+      if(!added)break;
+      pass++;
+    }
+    return out;
+  }
+
   function weightedShuffle(pool,tags){
     return [...pool]
       .map(f=>({f, key: Math.random() + Math.min(2,personalScore(f,tags)/40)}))
@@ -377,11 +400,13 @@
   }
 
   function diversify(pool,n) {
-    const out=[]; const directorCount={};
+    const out=[]; const directorCount={}, decadeCount={};
     for(const f of pool) {
       const d=f.director.split(',')[0];
+      const decade=Math.floor(f.year/10)*10;
       if ((directorCount[d]||0)>=1 && out.length<n-1) continue;
-      out.push(f); directorCount[d]=(directorCount[d]||0)+1;
+      if ((decadeCount[decade]||0)>=1 && out.length<n-1) continue;
+      out.push(f); directorCount[d]=(directorCount[d]||0)+1; decadeCount[decade]=(decadeCount[decade]||0)+1;
       if(out.length>=n) break;
     }
     return out;
@@ -401,9 +426,9 @@
     app.innerHTML = `
       <div class="shell">
         <header class="topbar">
-          <div class="brand" id="brand"><h1>JL²GETHER</h1><small>the back room</small></div>
+          <div class="brand" id="brand"><h1>${state.viewer?getProfile().label:'JL²GETHER'}</h1><small>the back room</small></div>
           <div class="header-actions">
-            ${state.viewer ? `<button class="tiny-btn" id="switchViewer">${getProfile().label}</button>` : ''}
+            ${state.viewer ? `<button class="tiny-btn viewer-switch" id="switchViewer">CHANGE VIEWER</button>` : ''}
             <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
           </div>
         </header>
@@ -416,69 +441,43 @@
   }
 
   function renderLanding(){
-    renderShell(`
-      <section class="hero">
-        <div class="eyebrow">down the alley · third door · basement level</div>
-        <h2>Who’s in the theater?</h2>
-        <p>The projector already knows the catalog. You tell it who showed up.</p>
-      </section>
-      <section class="viewer-grid">
-        ${viewerCard('josh','Joshie','Bubble','Stranger, deeper, more liminal; 90s electricity welcome.')}
-        ${viewerCard('julie','Julie','Birdie','Emotional, stylish, kinetic, darkly funny; no dead air.')}
-        ${viewerCard('both','JL²GETHER','Joshie + Julie','Shared frequency, weighted a little toward Joshie.')}
-      </section>`);
-    $$('.viewer-card').forEach(b=>b.addEventListener('click',()=>{state.viewer=b.dataset.viewer;localStorage.setItem('jl2.viewer',state.viewer);state.route='home';render();}));
+    app.innerHTML=`<main class="landing-only"><section class="viewer-grid viewer-grid-simple">
+      ${viewerCard('josh','Joshie')}
+      ${viewerCard('julie','Julie')}
+      ${viewerCard('both','JL²GETHER')}
+    </section></main>`;
+    $('.viewer-card').forEach(b=>b.addEventListener('click',()=>{state.viewer=b.dataset.viewer;localStorage.setItem('jl2.viewer',state.viewer);state.route='home';render();}));
   }
-  function viewerCard(id,name,alias,note){return `<button class="viewer-card" data-viewer="${id}"><span class="viewer-name">${name}</span><span class="viewer-note">${note}</span><span class="viewer-alias">${alias}</span></button>`}
+  function viewerCard(id,name){return `<button class="viewer-card viewer-card-simple" data-viewer="${id}"><span class="viewer-name">${name}</span></button>`}
 
   function renderHome(){
     const p=getProfile();
     renderShell(`
       <section class="room">
-        <div class="room-head"><div><div class="viewer-pill">Tonight: ${p.label}</div><h2>Pick the doorway.</h2></div><p>Five films at a time. Back out and enter again to reshuffle the room.</p></div>
+        <div class="room-head"><div><div class="viewer-pill">${p.label}</div><h2>Follow thy nose.</h2></div></div>
         <div class="route-grid-primary">
-          ${routeCard('mood','☁','Mood','What does the movie need to do to you tonight?','hero-route')}
-          ${routeCard('vibe','◉','Vibe','Enter one of the strange rooms behind the screen.','hero-route')}
+          ${routeCard('mood','☁','Mood','','hero-route')}
+          ${routeCard('vibe','◉','Vibe','','hero-route')}
         </div>
         <div class="route-grid-secondary">
-          ${routeCard('similar','≈','Similar movie','Start from a film.','small-route')}
-          ${routeCard('decade','⌛','Decade','Choose an era.','small-route')}
-          ${routeCard('director','🎬','Directors','Follow an auteur.','small-route')}
+          ${routeCard('similar','≈','Similar movie','','small-route')}
+          ${routeCard('decade','⌛','Decade','','small-route')}
+          ${routeCard('director','🎬','Directors','','small-route')}
         </div>
-        <button class="route-card dealer-route" data-route="random"><span><span class="glyph">🎟</span><h3>Dealer’s choice</h3><p>Give the projectionist the keys.</p></span><span>→</span></button>
+        <button class="route-card dealer-route" data-route="random"><span><span class="glyph">🎟</span><h3>Dealer’s choice</h3></span><span>→</span></button>
       </section>`);
-    $$('.route-card').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.route;if(r==='random'){state.route='dealer';state.dealer={strikes:0,film:null,revealed:false};renderDealer();}else{state.route=r;render();}}));
+    $('.route-card').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.route;if(r==='random'){state.route='dealer';state.dealer={strikes:0,film:null,revealed:false};renderDealer();}else{state.route=r;render();}}));
   }
-  function routeCard(id,glyph,title,desc,klass=''){return `<button class="route-card ${klass}" data-route="${id}"><span class="glyph">${glyph}</span><h3>${title}</h3><p>${desc}</p></button>`}
-
-  function renderMoodMixer(){
-    const selected=state.moodSelection||[];
-    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>What are you feeling?</h2></div><p>Pick one mood, or collide two of them. The stranger intersections are often the good ones.</p></div>
-      <div class="choice-grid">${MOODS.map(([id,label,emoji,note])=>`<button class="choice mood-choice ${selected.includes(id)?'selected':''}" data-id="${escapeAttr(id)}"><span class="emoji">${emoji}</span><strong>${label}</strong><small>${note}</small></button>`).join('')}</div>
-      <div class="mood-mixer-bar"><span id="moodMixReadout">${selected.length?selected.map(id=>MOODS.find(x=>x[0]===id)?.[1]).join(' + '):'choose one or two'}</span><button class="primary-btn" id="enterMood" ${selected.length?'':'disabled'}>enter this mood →</button></div>
-    </section>`);
-    $('.mood-choice').forEach(btn=>btn.addEventListener('click',()=>{
-      const id=btn.dataset.id, arr=[...(state.moodSelection||[])], i=arr.indexOf(id);
-      if(i>=0)arr.splice(i,1); else { if(arr.length>=2)arr.shift(); arr.push(id); }
-      state.moodSelection=arr; renderMoodMixer();
-    }));
-    $('#enterMood')?.addEventListener('click',()=>{
-      const ids=[...(state.moodSelection||[])]; if(!ids.length)return;
-      const items=ids.map(id=>MOODS.find(x=>x[0]===id)).filter(Boolean);
-      const groups=ids.map(id=>MOOD_MAP[id]||[]);
-      state.category={type:'mood',label:items.map(x=>x[1]).join(' + '),id:ids.join('+'),moodIds:ids,tagGroups:groups,tags:[...new Set(groups.flat())]};
-      state.route='results'; chooseResults(state.category.tags);
-    });
-  }
+  function routeCard(id,glyph,title,desc,klass=''){return `<button class="route-card ${klass}" data-route="${id}"><span class="glyph">${glyph}</span><h3>${title}</h3></button>`}
 
   function renderChoices(type,title,subtitle,items){
-    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>${title}</h2></div><p>${subtitle}</p></div><div class="choice-grid">${items.map(([id,label,emoji,note])=>`<button class="choice" data-id="${escapeAttr(id)}"><span class="emoji">${emoji||'•'}</span><strong>${label}</strong><small>${note||''}</small></button>`).join('')}</div></section>`);
-    $$('.choice').forEach(btn=>btn.addEventListener('click',()=>openChoice(type,btn.dataset.id)));
+    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>${title}</h2></div></div><div class="choice-grid">${items.map(([id,label,emoji])=>`<button class="choice" data-id="${escapeAttr(id)}"><span class="emoji">${emoji||'•'}</span><strong>${label}</strong></button>`).join('')}</div></section>`);
+    $('.choice').forEach(btn=>btn.addEventListener('click',()=>openChoice(type,btn.dataset.id)));
   }
 
   function openChoice(type,id){
     if(type==='mood'){
-      const item=MOODS.find(x=>x[0]===id); state.category={type,label:item[1],id,tags:MOOD_MAP[id]||[]}; state.route='results'; chooseResults(state.category.tags); return;
+      const item=MOODS.find(x=>x[0]===id); const tags=MOOD_MAP[id]||[]; state.category={type,label:item[1],id,moodIds:[id],tagGroups:[tags],tags}; state.route='results'; chooseResults(state.category.tags); return;
     }
     if(type==='vibe'){
       const item=VIBES.find(x=>x[0]===id); state.category={type,label:item[1],id,tags:CATEGORY_MAP[id]||[]}; state.route='results'; chooseResults(state.category.tags); return;
@@ -529,10 +528,10 @@
 
   function renderSimilar(){
     const anchors=dynamicAnchors();
-    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>Start from a movie</h2></div><p>Use a familiar doorway, or search the entire catalogue for an adjacent frequency.</p></div>
+    renderShell(`<section class="room"><div class="room-head"><div><div class="viewer-pill">${getProfile().label}</div><h2>Start from a movie</h2></div></div>
       <div class="similar-search"><input id="similarSearch" type="search" autocomplete="off" placeholder="search title, director, year…"><div id="similarSearchResults" class="similar-results"></div></div>
       <div class="section-title"><h3>High-signal doorways</h3><div class="rule"></div></div>
-      <div class="choice-grid">${anchors.map(t=>`<button class="choice similar-anchor" data-id="${escapeAttr(t)}"><span class="emoji">≈</span><strong>${t}</strong><small>find the adjacent frequency</small></button>`).join('')}</div>
+      <div class="choice-grid">${anchors.map(t=>`<button class="choice similar-anchor" data-id="${escapeAttr(t)}"><span class="emoji">≈</span><strong>${t}</strong></button>`).join('')}</div>
     </section>`);
     const open=id=>openChoice('similar',id);
     $('.similar-anchor').forEach(btn=>btn.addEventListener('click',()=>open(btn.dataset.id)));
@@ -619,6 +618,37 @@
     $('#burnDealer')?.addEventListener('click',()=>{state.dealer.strikes++;const old=movieKey(f);state.dealer.film=pickDealerFilm(old);state.dealer.revealed=false;renderDealer();});
   }
 
+
+  function moodCombineBar(){
+    const c=state.category;
+    if(c?.type!=='mood') return '';
+    const ids=c.moodIds||[c.id].filter(Boolean);
+    if(ids.length>1){
+      return `<div class="mood-combine"><span>${ids.map(id=>MOODS.find(x=>x[0]===id)?.[1]).filter(Boolean).join(' + ')}</span><button class="ghost-btn" id="removeMoodMix">remove second mood</button></div>`;
+    }
+    const first=ids[0];
+    return `<div class="mood-combine"><span>combine with another mood?</span><select id="secondMood"><option value="">choose one…</option>${MOODS.filter(x=>x[0]!==first).map(([id,label])=>`<option value="${escapeAttr(id)}">${label}</option>`).join('')}</select><button class="ghost-btn" id="combineMoodBtn">combine</button></div>`;
+  }
+
+  function bindMoodCombine(){
+    $('#combineMoodBtn')?.addEventListener('click',()=>{
+      const first=(state.category?.moodIds||[state.category?.id])[0];
+      const second=$('#secondMood')?.value;
+      if(!first||!second)return;
+      const ids=[first,second], items=ids.map(id=>MOODS.find(x=>x[0]===id)).filter(Boolean);
+      const groups=ids.map(id=>MOOD_MAP[id]||[]);
+      state.category={type:'mood',label:items.map(x=>x[1]).join(' + '),id:ids.join('+'),moodIds:ids,tagGroups:groups,tags:[...new Set(groups.flat())]};
+      chooseResults(state.category.tags);
+    });
+    $('#removeMoodMix')?.addEventListener('click',()=>{
+      const first=(state.category?.moodIds||[])[0];
+      if(!first)return;
+      const item=MOODS.find(x=>x[0]===first);
+      state.category={type:'mood',label:item[1],id:first,moodIds:[first],tagGroups:[MOOD_MAP[first]||[]],tags:MOOD_MAP[first]||[]};
+      chooseResults(state.category.tags);
+    });
+  }
+
   function renderResults(){
     const title=state.category?.label||'Tonight';
     renderShell(`<section class="room">
@@ -636,9 +666,11 @@
           <button class="primary-btn" id="refreshBtn">reshuffle ↻</button>
         </div>
       </div>
+      ${moodCombineBar()}
       <div class="poster-grid" id="posterGrid">${state.results.map(movieCard).join('')}</div>
     </section>`);
     $('#backBtn').addEventListener('click',()=>{state.route=state.category?.type||'home';render();});
+    bindMoodCombine();
     $('#refreshBtn').addEventListener('click',()=>rerunCategory());
     $('#hideWatched').addEventListener('change',e=>{state.hideWatched=e.target.checked;rerunCategory();});
     $('#sortSel').addEventListener('change',e=>{state.sort=e.target.value;rerunCategory();});
@@ -718,7 +750,7 @@
         <div class="lobby-note">${buzzLine(f)}</div>
         <div class="why-box"><div class="eyebrow">why the projectionist pulled it</div>${whyThisFilm(f)}</div>
         <div class="detail-tags">${f.tags.slice(0,8).map(t=>`<span>${t}</span>`).join('')}</div>
-        <div id="ratingBox"></div><div id="reactionBox"></div>
+        <div id="ratingBox"></div>
         <div class="file-row"><a class="ghost-btn" target="_blank" rel="noopener" href="https://letterboxd.com/film/${f.slug||slugify(f.title)}/">open on Letterboxd ↗</a><button class="tiny-btn" id="anotherLike">more like this</button></div>
       </div></div></div>`;
     document.body.appendChild(modal);
@@ -730,7 +762,7 @@
       el.innerHTML=r?.avg?`LB ${Number(r.avg).toFixed(2)} / 5`:'rating unavailable in snapshot'; renderRatingBox(f,modal,r);
     });
     $('#anotherLike',modal).addEventListener('click',()=>{modal.remove();state.category={type:'similar',label:`Like ${f.title}`,id:f.title,tags:f.tags};state.route='results';chooseResults(f.tags,x=>x.title!==f.title);});
-    renderReactionPanel(f,modal); enrichFilm(f).then(()=>{});
+  enrichFilm(f).then(()=>{});
   }
 
   function perfectSentence(f,meta){
@@ -914,8 +946,8 @@
     if(!state.viewer && state.route!=='settings') state.route='landing';
     if(state.route==='landing') return renderLanding();
     if(state.route==='home') return renderHome();
-    if(state.route==='mood') return renderMoodMixer();
-    if(state.route==='vibe') return renderChoices('vibe','Choose a shelf','These are hand-labeled rooms, not database genres.',VIBES);
+    if(state.route==='mood') return renderChoices('mood','What are you feeling?','',MOODS);
+    if(state.route==='vibe') return renderChoices('vibe','Choose a shelf','',VIBES);
     if(state.route==='similar') return renderSimilar();
     if(state.route==='decade') return renderChoices('decade','Choose a decade','The decade is only the doorway; your taste still decides what is waiting behind it.',DECADES.map(d=>{const start=Number(d.slice(0,4));const n=FILMS.filter(f=>f.year>=start&&f.year<start+10).length;return [d,d,'⌛',`${n} films · filtered through your profile`];}));
     if(state.route==='director') return renderDirectors();
