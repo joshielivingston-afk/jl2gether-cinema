@@ -5,7 +5,8 @@ on:
     branches: ["main"]
     paths:
       - "data.js"
-      - "catalog-extra.js"\n      - "catalog-v04.js"
+      - "catalog-extra.js"
+      - "catalog-v04.js"
       - "scripts/update-ratings.js"
       - ".github/workflows/snapshot-ratings.yml"
   workflow_dispatch:
