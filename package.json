@@ -1,6 +1,6 @@
 {
   "name": "jl2gether-cinema",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "The Back Room — a private cinema recommender for Joshie, Julie, and JL²GETHER.",
   "scripts": {
