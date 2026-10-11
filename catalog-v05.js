@@ -183,7 +183,7 @@ const V05_CURATED = [
   F('The Salt of the Earth',2014,'Wim Wenders, Juliano Ribeiro Salgado',['2010s','documentary','emotional-charge','inspiring','historical'],'a photographer looks back at humanity and recovers hope','📷',4,5),
   F('Fire of Love',2022,'Sara Dosa',['2020s','documentary','romantic','cosmic','beautiful-damage'],'two volcanologists love each other through fire','🌋',5,5),
   F('All Light, Everywhere',2021,'Theo Anthony',['2020s','documentary','media','philosophical','political'],'cameras and power study each other','📹',5,4),
-  F('A Life on the Farm',2022,'Oscar Harding',['2020s','documentary','docs-weird','tender-weirdos','americana'],'home videos preserve one farmer’s handmade universe','🐄',5,5),,
+  F('A Life on the Farm',2022,'Oscar Harding',['2020s','documentary','docs-weird','tender-weirdos','americana'],'home videos preserve one farmer’s handmade universe' ,'🐄',5,5),
   // second v0.5 tranche: deepen early cinema, world cinema, and recent strange work
   F('A Page of Madness',1926,'Teinosuke Kinugasa',['20s','experimental','dream','psychological','unwatchable'],'a silent asylum becomes fractured subjective cinema','🌀',5,4),
   F('The Lodger',1927,'Alfred Hitchcock',['20s','crime','night-city','paranoid','gothic'],'London fears a killer in the fog','🧥',4,4),
