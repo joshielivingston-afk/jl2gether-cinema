@@ -290,8 +290,33 @@
   }
 
   const GENERIC_SIMILAR_TAGS = new Set(['90s','2000s','2010s','2020s','dark','tender','stylish','playful']);
+  const MOOD_GATES = {
+    wired: f => {
+      // Wired means actual nervous-system energy. Night-city / cyber / Y2K texture alone is not enough.
+      if (f.tags.includes('rocket-fuel') || f.tags.includes('elegant-panic')) return true;
+      if (f.tags.includes('kinetic')) return true;
+      return hasAny(f,['cyber','y2k','night-city']) && hasAny(f,['angry','counterculture','crime','playful','campy']);
+    },
+    sleepy: f => {
+      // Sleepy means safe to surrender attention to, not merely dreamlike / liminal.
+      if (f.tags.includes('sleepy') || f.tags.includes('harmonious')) return true;
+      const tooSharp=hasAny(f,['kinetic','rocket-fuel','elegant-panic','horror','macabre','unwatchable','angry','crime','body-horror']);
+      if (tooSharp) return false;
+      if (f.tags.includes('slow') && hasAny(f,['dream','tender','liminal','romantic','cosmic'])) return true;
+      return f.tags.includes('dream') && hasAny(f,['tender','harmonious','romantic']) && !f.tags.includes('dark');
+    },
+    harmonious: f => {
+      // Harmonious is peace + connection + soul-warmth / spiritual attunement.
+      if (f.tags.includes('harmonious')) return true;
+      const abrasive=hasAny(f,['kinetic','rocket-fuel','elegant-panic','horror','macabre','unwatchable','angry','dark']);
+      if (abrasive) return false;
+      if (f.tags.includes('tender') && hasAny(f,['romantic','cosmic','philosophical','documentary','dream'])) return true;
+      return f.tags.includes('cosmic') && hasAny(f,['tender','dream']);
+    }
+  };
+
   const VIBE_GATES = {
-    '25th-hour': f => hasAny(f,['25th-hour','dream','liminal']),
+    '25th-hour': f => f.tags.includes('25th-hour') || (f.tags.includes('night-city') && hasAny(f,['liminal','dream','lonely'])),
     'unwatchable': f => f.tags.includes('unwatchable'),
     'c-films': f => f.tags.includes('c-films'),
     'y2k-club': f => f.tags.includes('y2k-club'),
@@ -299,7 +324,7 @@
     '70s-rocket': f => f.tags.includes('70s') && hasAny(f,['kinetic','rocket-fuel','crime','paranoid','angry']),
     'liminal': f => f.tags.includes('liminal'),
     'dream-logic': f => f.tags.includes('dream'),
-    'rocket-fuel': f => hasAny(f,['rocket-fuel','kinetic','elegant-panic']),
+    'rocket-fuel': f => f.tags.includes('rocket-fuel') || f.tags.includes('elegant-panic') || (f.tags.includes('kinetic') && hasAny(f,['angry','counterculture','crime','y2k-club','campy'])),
     'brainfuck': f => f.tags.includes('brainfuck'),
     'esoteric': f => hasAny(f,['esoteric','underground']),
     'docs-inspire': f => hasAny(f,['docs-inspire','documentary']) && !f.tags.includes('docs-weird'),
@@ -316,7 +341,11 @@
     const c=state.category;
     if(!c || c.type==='random' || c.type==='decade' || c.type==='director') return true;
     if(c.type==='vibe') return (VIBE_GATES[c.id] || (x=>hasAny(x,tags)))(film);
-    if(c.type==='mood') { const groups=c.tagGroups||[]; return groups.length>1 ? groups.every(g=>hasAny(film,g)) : hasAny(film,tags); }
+    if(c.type==='mood') {
+      const ids=c.moodIds||[c.id].filter(Boolean);
+      const matches=id => (MOOD_GATES[id] || (f=>hasAny(f,MOOD_MAP[id]||tags)))(film);
+      return ids.length>1 ? ids.every(matches) : matches(ids[0]);
+    }
     if(c.type==='similar') {
       const anchor=FILMS.find(x=>x.title===c.id);
       if(!anchor) return true;
