@@ -1152,3 +1152,29 @@ header.topbar {
   .poster-card .spark { opacity:.18; transition:opacity .12s ease; }
   .poster-card:hover .spark { opacity:1; }
 }
+
+
+/* v0.5.2 cleanup */
+.route-card.small-route {
+  grid-template-columns:1fr;
+}
+.route-card.small-route .glyph { display:none; }
+.landing-sound {
+  position:fixed;
+  top:16px;
+  right:16px;
+  z-index:4;
+  border:1px solid rgba(231,223,210,.36);
+  border-radius:0;
+  background:rgba(11,10,9,.72);
+  color:var(--paper-dim);
+  padding:7px 9px;
+  font:500 .58rem var(--mono);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.landing-sound:hover {
+  background:var(--paper);
+  color:var(--ink);
+}
