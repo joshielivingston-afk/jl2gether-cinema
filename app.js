@@ -312,6 +312,31 @@
       if (abrasive) return false;
       if (f.tags.includes('tender') && hasAny(f,['romantic','cosmic','philosophical','documentary','dream'])) return true;
       return f.tags.includes('cosmic') && hasAny(f,['tender','dream']);
+    },
+    lonely: f => {
+      // Feeling lonely means wanting company, not more isolation.
+      const abrasive=hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel','elegant-panic']);
+      if (abrasive) return false;
+      if (f.tags.includes('harmonious')) return true;
+      if (f.tags.includes('tender') && hasAny(f,['romantic','playful','comedy','nostalgic','tender-weirdos'])) return true;
+      return f.tags.includes('playful') && hasAny(f,['comedy','tender-weirdos','romantic']);
+    },
+    homesick: f => {
+      // Homesick means longing for home, so recommend warmth, belonging, return, and joyful sorrow.
+      const abrasive=hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel']);
+      if (abrasive) return false;
+      if (f.tags.includes('homesick')) return true;
+      if (f.tags.includes('harmonious') && hasAny(f,['tender','nostalgic','romantic'])) return true;
+      if (f.tags.includes('nostalgic') && hasAny(f,['tender','playful','romantic','comedy'])) return true;
+      return f.tags.includes('tender') && f.tags.includes('playful');
+    },
+    depressed: f => {
+      // Meet the viewer where they are, then gently lead them outward.
+      const tooHarsh=hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel','elegant-panic','body-horror']);
+      if (tooHarsh) return false;
+      if (f.tags.includes('harmonious')) return true;
+      if (f.tags.includes('tender') && hasAny(f,['philosophical','nostalgic','romantic','playful','comedy','tender-weirdos'])) return true;
+      return f.tags.includes('philosophical') && hasAny(f,['tender','dream','harmonious']);
     }
   };
 
