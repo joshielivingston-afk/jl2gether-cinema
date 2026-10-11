@@ -289,7 +289,43 @@
     return a;
   }
 
-  const GENERIC_SIMILAR_TAGS = new Set(['90s','2000s','2010s','2020s','dark','tender','stylish','playful']);
+  const GENERIC_SIMILAR_TAGS = new Set([
+    '20s','30s','40s','50s','60s','70s','80s','90s',
+    '1920s','1930s','1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s','2020s',
+    'dark','stylish','playful','emotional-charge'
+  ]);
+
+  const HIGH_ENERGY_TAGS = new Set(['kinetic','rocket-fuel','elegant-panic','y2k-club','action']);
+  const LOW_ENERGY_TAGS = new Set(['slow','sleepy','harmonious','tender','lonely']);
+
+  function similarEnough(anchor, film){
+    const a=anchor.tags.filter(t=>!GENERIC_SIMILAR_TAGS.has(t));
+    const b=new Set(film.tags.filter(t=>!GENERIC_SIMILAR_TAGS.has(t)));
+    const shared=a.filter(t=>b.has(t));
+
+    // Multiple meaningful overlaps are enough on their own.
+    if(shared.length>=2) return true;
+
+    // One overlap can work only when the films also live in a compatible energetic register.
+    if(shared.length===1){
+      const aHigh=a.some(t=>HIGH_ENERGY_TAGS.has(t));
+      const bHigh=film.tags.some(t=>HIGH_ENERGY_TAGS.has(t));
+      const aLow=a.some(t=>LOW_ENERGY_TAGS.has(t));
+      const bLow=film.tags.some(t=>LOW_ENERGY_TAGS.has(t));
+
+      // Prevent obvious collisions like Lost in Translation -> Run Lola Run.
+      if((aLow && bHigh) || (aHigh && bLow)) return false;
+
+      const strongShared=new Set([
+        'liminal','dream','25th-hour','night-city','beautiful-damage','tender-weirdos',
+        'counterculture','psychosexual','brainfuck','esoteric','underground','cosmic',
+        'body-horror','docs-weird','y2k-club','harmonious','lonely'
+      ]);
+      return strongShared.has(shared[0]);
+    }
+
+    return false;
+  }
   const MOOD_GATES = {
     wired: f => {
       // Wired means actual nervous-system energy. Night-city / cyber / Y2K texture alone is not enough.
@@ -374,8 +410,7 @@
     if(c.type==='similar') {
       const anchor=FILMS.find(x=>x.title===c.id);
       if(!anchor) return true;
-      const signature=anchor.tags.filter(t=>!GENERIC_SIMILAR_TAGS.has(t));
-      return hasAny(film, signature.length ? signature : anchor.tags);
+      return similarEnough(anchor,film);
     }
     return true;
   }
