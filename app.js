@@ -460,7 +460,9 @@
     if(c.type==='similar') {
       const anchor=FILMS.find(x=>x.title===c.id);
       if(!anchor) return true;
-      return similarEnough(anchor,film);
+      // Let the Similar Movie ranker see every film with at least one meaningful semantic overlap.
+      // It uses a strict >=2.5 similarity pool when possible, with a controlled fallback for sparse anchors.
+      return similarityScore(anchor,film)>-90;
     }
     return true;
   }
