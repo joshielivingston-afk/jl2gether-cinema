@@ -5,7 +5,7 @@
 
   const state = {
     viewer: localStorage.getItem('jl2.viewer') || null,
-    route: 'home',
+    route: 'landing',
     category: null,
     results: [],
     revealMeta: {},
@@ -23,13 +23,71 @@
     reactions: loadJSON('jl2.reactions', {}),
     resultRoles: {},
     moodSelection: [],
-    dealer: null
+    dealer: null,
+    soundOn: localStorage.getItem('jl2.sound') !== 'off'
   };
 
   function loadJSON(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
   }
   function saveJSON(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+
+  let ambientCtx=null, ambientMaster=null, ambientNodes=[];
+  function ensureAtmosphere(){
+    if(!state.soundOn) return;
+    try{
+      if(!ambientCtx){
+        const Ctx=window.AudioContext||window.webkitAudioContext;
+        if(!Ctx) return;
+        ambientCtx=new Ctx();
+        ambientMaster=ambientCtx.createGain();
+        ambientMaster.gain.value=.018;
+        ambientMaster.connect(ambientCtx.destination);
+
+        const freqs=[110,164.81,246.94];
+        freqs.forEach((freq,i)=>{
+          const osc=ambientCtx.createOscillator();
+          const gain=ambientCtx.createGain();
+          const lfo=ambientCtx.createOscillator();
+          const lfoGain=ambientCtx.createGain();
+          osc.type=i===0?'sine':'triangle';
+          osc.frequency.value=freq;
+          gain.gain.value=i===0?.52:.18;
+          lfo.type='sine';
+          lfo.frequency.value=.035+i*.018;
+          lfoGain.gain.value=.08;
+          lfo.connect(lfoGain); lfoGain.connect(gain.gain);
+          osc.connect(gain); gain.connect(ambientMaster);
+          osc.start(); lfo.start();
+          ambientNodes.push(osc,gain,lfo,lfoGain);
+        });
+
+        const noise=ambientCtx.createBufferSource();
+        const buffer=ambientCtx.createBuffer(1,ambientCtx.sampleRate*2,ambientCtx.sampleRate);
+        const d=buffer.getChannelData(0);
+        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*.22;
+        noise.buffer=buffer; noise.loop=true;
+        const filter=ambientCtx.createBiquadFilter();
+        filter.type='lowpass'; filter.frequency.value=330;
+        const ng=ambientCtx.createGain(); ng.gain.value=.018;
+        noise.connect(filter); filter.connect(ng); ng.connect(ambientMaster);
+        noise.start();
+        ambientNodes.push(noise,filter,ng);
+      }
+      if(ambientCtx.state==='suspended') ambientCtx.resume();
+      if(ambientMaster) ambientMaster.gain.setTargetAtTime(.018,ambientCtx.currentTime,.5);
+    }catch(e){}
+  }
+  function setSound(on){
+    state.soundOn=!!on;
+    localStorage.setItem('jl2.sound',state.soundOn?'on':'off');
+    if(state.soundOn) ensureAtmosphere();
+    else if(ambientMaster&&ambientCtx) ambientMaster.gain.setTargetAtTime(0,ambientCtx.currentTime,.25);
+    document.querySelectorAll('[data-sound-toggle]').forEach(b=>b.textContent=state.soundOn?'sound on':'sound off');
+  }
+  function bindSoundToggle(root=document){
+    root.querySelectorAll('[data-sound-toggle]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();setSound(!state.soundOn);}));
+  }
 
   function slugify(s) {
     return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,'').replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -445,7 +503,17 @@
     'beautiful-damage': f => f.tags.includes('beautiful-damage'),
     'tender-weirdos': f => f.tags.includes('tender-weirdos') || (f.tags.includes('tender') && f.tags.includes('weird')),
     'end-times': f => f.tags.includes('end-times'),
-    'elegant-panic': f => f.tags.includes('elegant-panic') || (f.tags.includes('kinetic') && hasAny(f,['stylish','night-city','crime']))
+    'elegant-panic': f => f.tags.includes('elegant-panic') || (f.tags.includes('kinetic') && hasAny(f,['stylish','night-city','crime'])),
+    'girly-pop': f => !hasAny(f,['unwatchable','macabre','body-horror','angry']) && (
+      (f.tags.includes('tender') && hasAny(f,['playful','romantic','nostalgic','comedy','harmonious','tender-weirdos'])) ||
+      (f.tags.includes('playful') && hasAny(f,['romantic','nostalgic','comedy']))
+    ),
+    'camp': f => f.tags.includes('campy'),
+    'childhood-nostalgia': f => !hasAny(f,['unwatchable','psychosexual','body-horror','macabre']) && (
+      (f.tags.includes('nostalgic') && hasAny(f,['playful','tender','harmonious','adventure','comedy'])) ||
+      (f.tags.includes('playful') && f.tags.includes('tender') && hasAny(f,['dream','adventure','harmonious','tender-weirdos']))
+    ),
+    'musical-vibe': f => f.tags.includes('musical') || (f.tags.includes('music') && !f.tags.includes('documentary') && !f.tags.includes('docs-weird'))
   };
   function hasAny(f,tags){ return tags.some(t=>f.tags.includes(t)); }
   function relevantToCategory(film,tags){
@@ -509,7 +577,7 @@
     state.results = chosen.slice(0,5);
     rememberResults(state.results);
     renderResults();
-    state.results.forEach(enrichFilm);
+    hydrateResultPosters(state.results);
   }
 
 
@@ -549,7 +617,7 @@
       const d=f.director.split(',')[0];
       const decade=Math.floor(f.year/10)*10;
       if ((directorCount[d]||0)>=1 && out.length<n-1) continue;
-      if ((decadeCount[decade]||0)>=1 && out.length<n-1) continue;
+      if (state.category?.type!=='decade' && (decadeCount[decade]||0)>=1 && out.length<n-1) continue;
       out.push(f); directorCount[d]=(directorCount[d]||0)+1; decadeCount[decade]=(decadeCount[decade]||0)+1;
       if(out.length>=n) break;
     }
@@ -573,6 +641,7 @@
           <div class="brand" id="brand"><h1>${state.viewer?getProfile().label:'JL²GETHER'}</h1><small>the back room</small></div>
           <div class="header-actions">
             ${state.viewer ? `<button class="tiny-btn viewer-switch" id="switchViewer">CHANGE VIEWER</button>` : ''}
+            <button class="tiny-btn" data-sound-toggle>${state.soundOn?'sound on':'sound off'}</button>
             <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
           </div>
         </header>
@@ -582,15 +651,17 @@
     $('#brand')?.addEventListener('click',()=>{state.route=state.viewer?'home':'landing';render();});
     $('#switchViewer')?.addEventListener('click',()=>{state.viewer=null;localStorage.removeItem('jl2.viewer');state.route='landing';render();});
     $('#settingsBtn')?.addEventListener('click',()=>{state.route='settings';render();});
+    bindSoundToggle();
   }
 
   function renderLanding(){
-    app.innerHTML=`<main class="landing-only"><section class="viewer-grid viewer-grid-simple">
+    app.innerHTML=`<main class="landing-only"><button class="landing-sound" data-sound-toggle>${state.soundOn?'sound on':'sound off'}</button><section class="viewer-grid viewer-grid-simple">
       ${viewerCard('josh','Joshie')}
       ${viewerCard('julie','Julie')}
       ${viewerCard('both','JL²GETHER')}
     </section></main>`;
-    document.querySelectorAll('.viewer-card').forEach(b=>b.addEventListener('click',()=>{state.viewer=b.dataset.viewer;localStorage.setItem('jl2.viewer',state.viewer);state.route='home';render();}));
+    bindSoundToggle();
+    document.querySelectorAll('.viewer-card').forEach(b=>b.addEventListener('click',()=>{ensureAtmosphere();state.viewer=b.dataset.viewer;localStorage.setItem('jl2.viewer',state.viewer);state.route='home';render();}));
   }
   function viewerCard(id,name){return `<button class="viewer-card viewer-card-simple" data-viewer="${id}"><span class="viewer-name">${name}</span></button>`}
 
@@ -598,21 +669,21 @@
     const p=getProfile();
     renderShell(`
       <section class="room">
-        <div class="room-head"><div><div class="viewer-pill">${p.label}</div><h2>Follow thy nose.</h2></div></div>
+        <div class="room-head"><div><h2>Follow thy nose.</h2></div></div>
         <div class="route-grid-primary">
-          ${routeCard('mood','☁','Mood','','hero-route')}
-          ${routeCard('vibe','◉','Vibe','','hero-route')}
+          ${routeCard('mood','','Mood','','hero-route')}
+          ${routeCard('vibe','','Vibe','','hero-route')}
         </div>
         <div class="route-grid-secondary">
-          ${routeCard('similar','≈','Similar movie','','small-route')}
-          ${routeCard('decade','⌛','Decade','','small-route')}
-          ${routeCard('director','🎬','Directors','','small-route')}
+          ${routeCard('similar','','Similar movie','','small-route')}
+          ${routeCard('decade','','Decade','','small-route')}
+          ${routeCard('director','','Directors','','small-route')}
         </div>
-        <button class="route-card dealer-route" data-route="random"><span><span class="glyph">🎟</span><h3>Dealer’s choice</h3></span><span>→</span></button>
+        <button class="route-card dealer-route" data-route="random"><span><h3>Dealer’s choice</h3></span><span>→</span></button>
       </section>`);
     document.querySelectorAll('.route-card').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.route;if(r==='random'){state.route='dealer';state.dealer={strikes:0,film:null,revealed:false};renderDealer();}else{state.route=r;render();}}));
   }
-  function routeCard(id,glyph,title,desc,klass=''){return `<button class="route-card ${klass}" data-route="${id}"><span class="glyph">${glyph}</span><h3>${title}</h3></button>`}
+  function routeCard(id,glyph,title,desc,klass=''){return `<button class="route-card ${klass}" data-route="${id}">${glyph?`<span class="glyph">${glyph}</span>`:''}<h3>${title}</h3></button>`}
 
   function renderChoices(type,title,subtitle,items){
     const showNotes=type==='mood'||type==='vibe';
@@ -752,13 +823,14 @@
     if(!state.dealer)state.dealer={strikes:0,film:null,revealed:false};
     if(!state.dealer.film)state.dealer.film=pickDealerFilm();
     const f=state.dealer.film, meta=state.metaCache[movieKey(f)]||{}, left=Math.max(0,3-state.dealer.strikes);
+    if(!state.dealer.revealed) enrichFilm(f,{silent:true}).then(m=>preloadPoster(m?.poster));
     renderShell(`<section class="dealer-room"><div class="eyebrow">dealer’s choice · ${getProfile().label}</div><h2>${state.dealer.revealed?'The projectionist has spoken.':'One sealed ticket.'}</h2>
       ${state.dealer.revealed?`<div class="dealer-reveal">${meta.poster?`<img src="${escapeAttr(meta.poster)}" alt="${escapeAttr(f.title)} poster">`:`<div class="poster-fallback">${f.title}</div>`}<div><div class="movie-kicker">${f.emoji} ${f.vibe}</div><h3>${f.title}</h3><p>${whyThisFilm(f)}</p><div class="dealer-actions"><button class="primary-btn" id="acceptDealer">accept fate</button>${left>0?`<button class="ghost-btn" id="burnDealer">burn ticket · ${left} reject${left===1?'':'s'} left</button>`:'<span class="secret">no refunds left</span>'}</div></div></div>`
       :`<button class="sealed-ticket" id="breakSeal"><span>JL²GETHER · THE BACK ROOM</span><strong>NO REFUNDS</strong><small>break seal</small></button><p class="privacy-note">You may burn three tickets. The fourth one is between you and God.</p>`}
       <button class="ghost-btn dealer-leave" id="leaveDealer">← leave the booth</button>
     </section>`);
     $('#leaveDealer').addEventListener('click',()=>{state.route='home';state.dealer=null;render();});
-    $('#breakSeal')?.addEventListener('click',()=>{state.dealer.revealed=true;state.seenHistory['dealer']=[movieKey(f),...(state.seenHistory['dealer']||[])].slice(0,30);sessionStorage.setItem('jl2.seen',JSON.stringify(state.seenHistory));Promise.resolve(enrichFilm(f)).then(()=>{if(state.route==='dealer')renderDealer();});});
+    $('#breakSeal')?.addEventListener('click',()=>{state.dealer.revealed=true;state.seenHistory['dealer']=[movieKey(f),...(state.seenHistory['dealer']||[])].slice(0,30);sessionStorage.setItem('jl2.seen',JSON.stringify(state.seenHistory));renderDealer();});
     $('#acceptDealer')?.addEventListener('click',()=>openMovie(f));
     $('#burnDealer')?.addEventListener('click',()=>{state.dealer.strikes++;const old=movieKey(f);state.dealer.film=pickDealerFilm(old);state.dealer.revealed=false;renderDealer();});
   }
@@ -797,8 +869,8 @@
   function renderResults(){
     const title=state.category?.label||'Tonight';
     const similar=state.category?.type==='similar';
-    const resultEyebrow=similar?`STARTING FROM / ${state.category?.id||title}`:`TONIGHT / ${title} / ${getProfile().label}`;
-    const resultTitle=similar?'Adjacent frequencies':'Five from the back room';
+    const resultEyebrow=similar?`ADJACENT FREQUENCIES / ${getProfile().label}`:`TONIGHT / ${getProfile().label}`;
+    const resultTitle=title;
     renderShell(`<section class="room">
       <div class="result-head">
         <div><div class="crumbs"><button class="ghost-btn" id="backBtn">← back</button> &nbsp; ${resultEyebrow}</div><h2>${resultTitle}</h2></div>
@@ -851,8 +923,17 @@
     document.querySelectorAll('.poster-card').forEach(card=>card.addEventListener('click',()=>{const f=FILMS.find(x=>movieKey(x)===card.dataset.key); if(f)openMovie(f);}));
   }
 
-  async function enrichFilm(f){
-    const key=movieKey(f); if(state.metaCache[key]?.poster) return;
+  function preloadPoster(url){
+    if(!url) return Promise.resolve();
+    return new Promise(resolve=>{const img=new Image();img.onload=img.onerror=resolve;img.src=url;});
+  }
+
+  async function enrichFilm(f,{silent=false}={}){
+    const key=movieKey(f);
+    if(state.metaCache[key]?.poster) {
+      if(!silent) preloadPoster(state.metaCache[key].poster);
+      return state.metaCache[key];
+    }
     try {
       const q=encodeURIComponent(f.title);
       const r=await fetch(`https://v3-cinemeta.strem.io/catalog/movie/top/search=${q}.json`,{cache:'force-cache'});
@@ -860,11 +941,19 @@
       const data=await r.json();
       const metas=(data.metas||[]).filter(m=>m.type==='movie');
       let m=metas.find(x=>Number((x.releaseInfo||'').slice(0,4))===f.year || Number(x.year)===f.year) || metas[0];
-      if(!m) return;
+      if(!m) return null;
       state.metaCache[key]={ poster:m.poster||m.background||null, imdbId:m.imdb_id||m.id||null, description:m.description||null, name:m.name||f.title };
       saveJSON('jl2.meta',state.metaCache);
-      if(state.route==='results' && state.results.includes(f)) renderResults();
-    } catch(e) { /* fallback stays */ }
+      if(!silent) preloadPoster(state.metaCache[key].poster);
+      return state.metaCache[key];
+    } catch(e) { return null; }
+  }
+
+  async function hydrateResultPosters(films){
+    const signature=films.map(movieKey).join('||');
+    await Promise.allSettled(films.map(f=>enrichFilm(f,{silent:true})));
+    await Promise.allSettled(films.map(f=>preloadPoster(state.metaCache[movieKey(f)]?.poster)));
+    if(state.route==='results' && state.results.map(movieKey).join('||')===signature) renderResults();
   }
 
   function renderReactionPanel(f,modal){
@@ -1131,5 +1220,6 @@
     return renderHome();
   }
 
+  document.addEventListener('pointerdown',()=>{if(state.soundOn)ensureAtmosphere();},{once:true});
   render();
 })();
