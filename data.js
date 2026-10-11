@@ -13,7 +13,7 @@ const PROFILE_SEEDS = {
   julie: {
     label: 'Julie', alias: 'Birdie', weight: 1,
     favorites: ['Dead Poets Society','The Grand Budapest Hotel','City of God','Good Time','Being John Malkovich','The Matrix','Wild at Heart','Fantastic Mr. Fox','Raw','Run Lola Run','Go','Requiem for a Dream'],
-    taste: { emotional:5, kinetic:5, dark:4, playful:4, stylish:5, weird:4, crime:4, romantic:3, comedy:4, horror:4, dream:3, y2k:3, '90s':3, tender:4, macabre:4, surreal:4 }
+    taste: { 'emotional-charge':5, kinetic:5, dark:4, playful:4, stylish:5, weird:4, crime:4, romantic:3, comedy:4, horror:4, dream:3, y2k:3, '90s':3, tender:4, macabre:4, surreal:4 }
   }
 };
 
@@ -24,8 +24,8 @@ const MOODS = [
   ['horny','Horny','🫦','Sensual, charged, psychosexual, desirous.'],
   ['in-love','In love','♥','Intimacy, chemistry, tenderness, ache.'],
   ['weirded-out','Weirded out','🫥','Something is wrong with the room. Good.'],
-  ['homesick','Homesick','🏠','Comfort, repeats, family classics, private nostalgia.'],
-  ['depressed','Depressed','☂','Something honest enough to sit beside you.'],
+  ['homesick','Homesick','🏠','Warmth, belonging, return, family, and that joyful ache of home.'],
+  ['depressed','Depressed','☂','Meet me where I am, then gently bring me back toward life.'],
   ['playful','Playful','🎈','Inventive, mischievous, ridiculous in the right way.'],
   ['harmonious','Harmonious','◌','Quietly beautiful films that settle the static.'],
   ['nostalgic','Nostalgic','📼','Personal memory first; age of the movie second.'],
@@ -181,7 +181,7 @@ const FILMS = [
   F('Speed',1994,'Jan de Bont',['90s','kinetic','action','rocket-fuel'],'clean mechanical suspense','🚌',3,4),
   F('The Raid',2011,'Gareth Evans',['kinetic','action','rocket-fuel'],'vertical combat furnace','🥋',3,5),
   F('The Raid 2',2014,'Gareth Evans',['kinetic','action','rocket-fuel','crime'],'operatic impact machine','🔨',3,5),
-  F('City of God',2002,'Fernando Meirelles, Kátia Lund',['kinetic','crime','dark','emotional'],'street history at bullet speed','📸',4,5),
+  F('City of God',2002,'Fernando Meirelles, Kátia Lund',['kinetic','crime','dark','emotional-charge'],'street history at bullet speed','📸',4,5),
   F('Baby Driver',2017,'Edgar Wright',['kinetic','crime','playful','rocket-fuel'],'getaway driving on a mixtape','🎧',3,5),
   F('Snatch',2000,'Guy Ritchie',['kinetic','crime','comedy','playful'],'criminal clockwork with bruises','🥊',3,5),
   F('Sorcerer',1977,'William Friedkin',['70s','kinetic','dark','rocket-fuel'],'four men driving nitroglycerin through hell','🚚',4,5),
@@ -286,9 +286,9 @@ const FILMS = [
   F('The Big Lebowski',1998,'Joel Coen',['90s','playful','comedy','cult'],'cosmic slacker detective fog','🥛',4,5),
   F('Rat Race',2001,'Jerry Zucker',['playful','comedy','kinetic'],'idiots sprinting toward money','🗺',2,5),
   F('Office Space',1999,'Mike Judge',['90s','comedy','nostalgic','counterculture'],'cubicle revolt in beige','🖨',4,5),
-  F('Amadeus',1984,'Miloš Forman',['emotional','stylish','beautiful-damage'],'genius heard through envy','🎼',3,5),
+  F('Amadeus',1984,'Miloš Forman',['emotional-charge','stylish','beautiful-damage'],'genius heard through envy','🎼',3,5),
   F('Requiem for a Dream',2000,'Darren Aronofsky',['dark','kinetic','beautiful-damage','unwatchable'],'desire becoming machinery','💊',3,5),
-  F('Whiplash',2014,'Damien Chazelle',['kinetic','emotional','dark'],'ambition played like combat','🥁',3,5),
+  F('Whiplash',2014,'Damien Chazelle',['kinetic','emotional-charge','dark'],'ambition played like combat','🥁',3,5),
   F('Being John Malkovich',1999,'Spike Jonze',['90s','weird','brainfuck','playful'],'identity rented by the quarter-hour','🚪',5,5),
   F('Wild at Heart',1990,'David Lynch',['90s','romantic','kinetic','weird','macabre'],'lovers in a flaming fairy tale','🔥',5,5),
 
@@ -385,8 +385,8 @@ const MOOD_MAP = {
   horny: ['psychosexual','romantic'],
   'in-love': ['romantic','tender'],
   'weirded-out': ['weird','brainfuck','dream','esoteric'],
-  homesick: ['nostalgic','tender','playful'],
-  depressed: ['tender','beautiful-damage','philosophical','harmonious'],
+  homesick: ['homesick','nostalgic','tender','harmonious','playful'],
+  depressed: ['harmonious','tender','philosophical','nostalgic','playful'],
   playful: ['playful','campy','comedy'],
   harmonious: ['harmonious','tender','cosmic','romantic'],
   nostalgic: ['nostalgic','90s','y2k'],
@@ -395,7 +395,7 @@ const MOOD_MAP = {
   afraid: ['afraid','horror','macabre'],
   macabre: ['macabre','horror','dark'],
   wired: ['rocket-fuel','elegant-panic','kinetic','cyber','y2k','night-city'],
-  lonely: ['lonely','night-city','tender','liminal'],
+  lonely: ['tender','harmonious','romantic','playful','comedy'],
   cosmic: ['cosmic','philosophical','documentary'],
   angry: ['angry','counterculture','kinetic','dark'],
   tender: ['tender','romantic','beautiful-damage'],
