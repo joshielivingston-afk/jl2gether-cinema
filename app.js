@@ -796,9 +796,12 @@
 
   function renderResults(){
     const title=state.category?.label||'Tonight';
+    const similar=state.category?.type==='similar';
+    const resultEyebrow=similar?`STARTING FROM / ${state.category?.id||title}`:`TONIGHT / ${title} / ${getProfile().label}`;
+    const resultTitle=similar?'Adjacent frequencies':'Five from the back room';
     renderShell(`<section class="room">
       <div class="result-head">
-        <div><div class="crumbs"><button class="ghost-btn" id="backBtn">← back</button> &nbsp; ${getProfile().label}</div><h2>${title}</h2></div>
+        <div><div class="crumbs"><button class="ghost-btn" id="backBtn">← back</button> &nbsp; ${resultEyebrow}</div><h2>${resultTitle}</h2></div>
         <div class="controls">
           <label><input type="checkbox" id="hideWatched" ${state.hideWatched?'checked':''}> hide watched</label>
           <select id="sortSel" aria-label="Sort">
