@@ -27,7 +27,7 @@ const MOODS = [
   ['homesick','Homesick','🏠','Warmth, belonging, return, family, and that joyful ache of home.'],
   ['depressed','Depressed','☂','Meet me where I am, then gently bring me back toward life.'],
   ['playful','Playful','🎈','Inventive, mischievous, ridiculous in the right way.'],
-  ['harmonious','Harmonious','◌','Quietly beautiful films that settle the static.'],
+  ['harmonious','Harmonious','◌','Peace, connection, soul-warmth, and a sense that something is in tune.'],
   ['nostalgic','Nostalgic','📼','Personal memory first; age of the movie second.'],
   ['philosophical','Philosophical','∞','Existence, consciousness, morality, time.'],
   ['curious','Curious','🔎','A door you didn’t know was there.'],
