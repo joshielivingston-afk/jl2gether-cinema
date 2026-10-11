@@ -533,3 +533,622 @@ input[type=file] { max-width:100%; color:var(--paper-dim); }
     min-width:150px;
   }
 }
+
+
+/* =========================================================
+   v0.5.1 — MIDNIGHT HANDBILL
+   Rough in spirit, disciplined in execution.
+   ========================================================= */
+
+:root {
+  --ink:#0b0a09;
+  --coal:#12100f;
+  --char:#1b1815;
+  --paper:#e7dfd2;
+  --paper-dim:#aaa092;
+  --paper-faint:#756d63;
+  --stamp:#8e302d;
+  --stamp-2:#a64336;
+  --rust:#8b5a3f;
+  --line:rgba(231,223,210,.20);
+  --line-strong:rgba(231,223,210,.42);
+  --shadow:rgba(0,0,0,.68);
+  --radius:2px;
+  --display:'Bricolage Grotesque', Impact, 'Arial Narrow', sans-serif;
+  --serif:'Spectral', Georgia, 'Times New Roman', serif;
+  --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html { background:var(--ink); }
+body {
+  background:
+    linear-gradient(rgba(255,255,255,.012),rgba(255,255,255,.012)),
+    radial-gradient(circle at 52% -8%,rgba(142,48,45,.14),transparent 31rem),
+    linear-gradient(180deg,#12100e 0%,#0a0908 62%,#070706 100%);
+  font-family:var(--serif);
+  letter-spacing:0;
+}
+
+/* Grain behaves like copier/paper noise instead of screen glow. */
+.grain {
+  opacity:.052;
+  mix-blend-mode:screen;
+  background-image:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.14) 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(91deg,transparent 0 6px,rgba(255,255,255,.08) 6px 7px,transparent 7px 15px);
+  background-size:7px 9px,17px 23px;
+}
+
+.shell { max-width:1180px; padding:22px 24px 76px; }
+
+/* Masthead */
+header.topbar {
+  padding:7px 0 15px;
+  border-bottom:2px solid var(--paper);
+  align-items:flex-end;
+}
+.brand {
+  display:grid;
+  gap:1px;
+  align-items:end;
+}
+.brand h1 {
+  font-family:var(--display);
+  font-size:clamp(1.7rem,3.6vw,2.8rem);
+  font-weight:750;
+  line-height:.88;
+  letter-spacing:-.045em;
+  text-transform:uppercase;
+}
+.brand small {
+  order:-1;
+  font-family:var(--mono);
+  font-size:.58rem;
+  font-weight:600;
+  color:var(--paper-dim);
+  letter-spacing:.18em;
+}
+.header-actions { gap:7px; }
+
+.icon-btn,.tiny-btn,.ghost-btn,.primary-btn {
+  border-radius:1px;
+  border:1px solid var(--line-strong);
+  background:transparent;
+  box-shadow:none;
+  font-family:var(--mono);
+  font-size:.68rem;
+  font-weight:500;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+  padding:8px 10px;
+  transition:background .12s ease,color .12s ease,border-color .12s ease,transform .12s ease;
+}
+.icon-btn:hover,.tiny-btn:hover,.ghost-btn:hover {
+  border-color:var(--paper);
+  background:var(--paper);
+  color:var(--ink);
+  transform:none;
+}
+.primary-btn {
+  background:var(--stamp);
+  border-color:var(--stamp);
+  color:#f2e6d8;
+}
+.primary-btn:hover {
+  background:var(--paper);
+  border-color:var(--paper);
+  color:var(--ink);
+  transform:none;
+}
+.viewer-switch { letter-spacing:.12em; }
+
+/* LANDING: billing, not profile cards */
+.landing-only {
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:clamp(24px,6vw,70px);
+  background:
+    linear-gradient(90deg,transparent 49.8%,rgba(231,223,210,.055) 50%,transparent 50.2%),
+    radial-gradient(circle at 50% 30%,rgba(142,48,45,.12),transparent 29rem),
+    var(--ink);
+}
+.viewer-grid-simple {
+  width:min(920px,100%);
+  display:grid;
+  grid-template-columns:1fr;
+  gap:0;
+  border-top:2px solid var(--paper);
+  border-bottom:2px solid var(--paper);
+}
+.viewer-card-simple {
+  min-height:clamp(110px,20vh,185px);
+  border:0;
+  border-bottom:1px solid var(--line-strong);
+  border-radius:0;
+  padding:12px 5px;
+  background:transparent;
+  box-shadow:none;
+  overflow:visible;
+  text-align:left;
+  place-items:center start;
+}
+.viewer-card-simple:last-child { border-bottom:0; }
+.viewer-card-simple::after { display:none; }
+.viewer-card-simple:hover {
+  transform:none;
+  border-color:var(--line-strong);
+  background:var(--paper);
+  color:var(--ink);
+}
+.viewer-card-simple .viewer-name {
+  font-family:var(--display);
+  font-size:clamp(3.6rem,12vw,8.8rem);
+  line-height:.78;
+  font-weight:800;
+  letter-spacing:-.07em;
+  text-transform:uppercase;
+}
+
+/* Major screen headings */
+.room { animation:handbill-in .16s ease-out; }
+@keyframes handbill-in { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+
+.room-head {
+  padding:48px 0 22px;
+  align-items:flex-end;
+  border-bottom:1px solid var(--line);
+  margin-bottom:18px;
+}
+.room-head h2,
+.result-head h2,
+.dealer-room h2,
+.settings h2 {
+  font-family:var(--display);
+  font-weight:760;
+  letter-spacing:-.055em;
+  line-height:.9;
+  text-transform:uppercase;
+}
+.room-head h2 { font-size:clamp(3.2rem,8vw,6.8rem); }
+.viewer-pill,.eyebrow,.crumbs,.movie-kicker {
+  font-family:var(--mono);
+  color:var(--stamp-2);
+  font-weight:600;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+.viewer-pill { font-size:.62rem; margin-bottom:8px; }
+
+/* MAIN MENU — flyer blocks */
+.route-grid-primary { gap:0; margin:0; border:2px solid var(--paper); }
+.route-grid-secondary { gap:0; margin:12px 0 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); }
+.route-card {
+  border-radius:0;
+  border:0;
+  border-right:1px solid var(--line-strong);
+  background:transparent;
+  box-shadow:none;
+  color:var(--paper);
+}
+.route-card:last-child { border-right:0; }
+.route-card:hover {
+  transform:none;
+  background:var(--paper);
+  color:var(--ink);
+  border-color:var(--line-strong);
+}
+.route-card.hero-route {
+  min-height:180px;
+  padding:22px 24px 18px;
+  background:transparent;
+  justify-content:space-between;
+}
+.route-card.hero-route:first-child { border-right:2px solid var(--paper); }
+.route-card.hero-route .glyph {
+  font-family:var(--mono);
+  font-size:1rem;
+  opacity:.72;
+}
+.route-card h3,
+.route-card.hero-route h3,
+.route-card.small-route h3 {
+  font-family:var(--display);
+  font-weight:760;
+  text-transform:uppercase;
+  letter-spacing:-.045em;
+}
+.route-card.hero-route h3 {
+  font-size:clamp(2.7rem,6vw,5.3rem);
+  line-height:.82;
+  margin:0;
+}
+.route-card.small-route {
+  min-height:70px;
+  padding:12px 15px;
+  grid-template-columns:30px 1fr;
+}
+.route-card.small-route h3 { font-size:1.05rem; }
+.route-card.dealer-route {
+  border:2px solid var(--stamp);
+  border-radius:0;
+  background:rgba(142,48,45,.11);
+  min-height:66px;
+  margin:14px 0 42px;
+}
+.route-card.dealer-route:hover {
+  background:var(--stamp);
+  color:#f5e8da;
+}
+.route-card.dealer-route h3 {
+  font-family:var(--display);
+  text-transform:uppercase;
+  letter-spacing:-.02em;
+  font-weight:750;
+}
+
+/* MOOD / VIBE — programme entries */
+.choice-grid {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0;
+  border-top:2px solid var(--paper);
+}
+.choice {
+  min-height:112px;
+  border-radius:0;
+  border:0;
+  border-bottom:1px solid var(--line-strong);
+  border-right:1px solid var(--line-strong);
+  background:transparent;
+  padding:15px 16px 14px;
+  display:grid;
+  grid-template-columns:30px 1fr;
+  grid-template-rows:auto 1fr;
+  column-gap:10px;
+  justify-content:stretch;
+}
+.choice:nth-child(even) { border-right:0; }
+.choice:hover,.choice.selected {
+  transform:none;
+  background:var(--paper);
+  color:var(--ink);
+  box-shadow:none;
+  border-color:var(--line-strong);
+}
+.choice .emoji {
+  grid-row:1 / span 2;
+  font-family:var(--mono);
+  font-size:.9rem;
+  margin-top:4px;
+}
+.choice strong {
+  font-family:var(--display);
+  font-size:clamp(1.35rem,2.6vw,2rem);
+  line-height:.95;
+  text-transform:uppercase;
+  letter-spacing:-.035em;
+  font-weight:720;
+}
+.choice small {
+  display:block;
+  margin-top:8px;
+  font-family:var(--serif);
+  color:var(--paper-dim);
+  font-size:.86rem;
+  line-height:1.35;
+  max-width:44ch;
+}
+.choice:hover small,.choice.selected small { color:#514a43; }
+
+/* Similar Movie anchors remain compact handbill entries. */
+.similar-search { max-width:none; margin:0 0 28px; }
+.similar-search input {
+  border-radius:0;
+  border:0;
+  border-bottom:2px solid var(--paper);
+  padding:12px 2px;
+  background:transparent;
+  font-family:var(--display);
+  font-size:clamp(1.25rem,2.5vw,1.8rem);
+  color:var(--paper);
+}
+.similar-search input:focus {
+  border-color:var(--stamp-2);
+  box-shadow:none;
+}
+.search-hit {
+  border-radius:0;
+  border:0;
+  border-bottom:1px solid var(--line);
+  background:transparent;
+  padding:9px 2px;
+}
+.search-hit:hover { background:var(--paper); color:var(--ink); }
+.search-hit:hover span { color:#4e4943; }
+.section-title { margin:32px 0 10px; }
+.section-title h3 {
+  font-family:var(--mono);
+  font-size:.66rem;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:var(--paper-dim);
+}
+
+/* RESULTS — five programmed films */
+.result-head {
+  align-items:flex-end;
+  margin:34px 0 18px;
+  padding-bottom:14px;
+  border-bottom:2px solid var(--paper);
+}
+.result-head h2 {
+  font-size:clamp(3rem,7vw,6rem);
+  margin:9px 0 0;
+}
+.crumbs {
+  font-size:.6rem;
+  color:var(--paper-dim);
+}
+.crumbs .ghost-btn { margin-right:8px; }
+.controls {
+  border-left:1px solid var(--line-strong);
+  padding-left:12px;
+}
+.controls label,.controls select {
+  font-family:var(--mono);
+  font-size:.62rem;
+  text-transform:uppercase;
+}
+.controls select {
+  border-radius:0;
+  border:1px solid var(--line-strong);
+  background:transparent;
+  padding:7px 25px 7px 8px;
+}
+.poster-grid {
+  gap:12px;
+  align-items:start;
+}
+.poster-card {
+  border-radius:0;
+  border:1px solid rgba(231,223,210,.32);
+  box-shadow:5px 7px 0 rgba(0,0,0,.26);
+  background:#111;
+  transition:transform .13s ease,border-color .13s ease,box-shadow .13s ease;
+}
+.poster-card:hover {
+  transform:translate(-2px,-3px);
+  border-color:var(--paper);
+  box-shadow:8px 10px 0 rgba(0,0,0,.36);
+}
+.poster-card img { filter:saturate(.88) contrast(1.06); }
+.poster-card::after {
+  background:linear-gradient(180deg,transparent 67%,rgba(4,4,3,.84));
+}
+.spark { left:7px;right:7px;bottom:7px; }
+.spark span {
+  border-radius:0;
+  border:0;
+  border-top:1px solid rgba(231,223,210,.38);
+  background:rgba(6,6,5,.86);
+  padding:5px 2px 2px;
+  width:100%;
+  font-size:.57rem;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.role-badge {
+  border-radius:0;
+  border:0;
+  background:var(--stamp);
+  color:#f5e8da;
+  box-shadow:none;
+  font-size:.55rem;
+  text-transform:uppercase;
+}
+.watched-dot {
+  width:10px;height:10px;border-radius:0;
+  background:var(--paper);
+  border:2px solid var(--ink);
+  box-shadow:none;
+}
+
+/* Mood mixing = marginal annotation */
+.mood-combine {
+  border-radius:0;
+  border:0;
+  border-left:3px solid var(--stamp);
+  background:transparent;
+  padding:7px 0 7px 11px;
+  margin:0 0 18px;
+}
+.mood-combine span { color:var(--stamp-2); }
+.mood-combine select {
+  border-radius:0;
+  background:transparent;
+  border:1px solid var(--line-strong);
+}
+
+/* MOVIE DETAIL — programme note rather than app modal */
+.modal-backdrop {
+  background:rgba(0,0,0,.84);
+  backdrop-filter:blur(4px);
+}
+.movie-modal {
+  width:min(920px,calc(100vw - 32px));
+  border-radius:0;
+  border:1px solid var(--paper);
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.018),transparent 20%),
+    #12100e;
+  box-shadow:14px 18px 0 rgba(0,0,0,.48);
+}
+.movie-modal .modal-grid { grid-template-columns:220px minmax(0,1fr); }
+.movie-modal .modal-poster { padding:22px 0 22px 22px; }
+.movie-modal .modal-poster img,
+.movie-modal .modal-poster>.poster-fallback {
+  width:196px;
+  border-radius:0;
+  border:1px solid var(--line-strong);
+  box-shadow:6px 7px 0 rgba(0,0,0,.33);
+}
+.movie-modal .modal-body { padding:22px 28px 25px; }
+.modal-close {
+  font-family:var(--display);
+  font-size:1.8rem;
+  color:var(--paper);
+}
+.movie-kicker { font-size:.58rem; color:var(--stamp-2); }
+.movie-title {
+  font-family:var(--display);
+  text-transform:uppercase;
+  font-weight:780;
+  letter-spacing:-.055em;
+  line-height:.86;
+  font-size:clamp(2.8rem,6vw,5rem);
+  margin:8px 0 10px;
+}
+.secret-line {
+  border-top:1px solid var(--line-strong);
+  border-bottom:1px solid var(--line-strong);
+  padding:7px 0;
+  margin:12px 0 17px;
+}
+.secret {
+  border:0;
+  border-radius:0;
+  background:transparent;
+  padding:3px 9px 3px 0;
+  font-size:.6rem;
+  text-transform:uppercase;
+}
+.secret button { color:var(--stamp-2); text-transform:uppercase; }
+.movie-modal .copy {
+  font-family:var(--serif);
+  font-size:1.03rem;
+  line-height:1.58;
+  max-width:62ch;
+}
+.movie-actions { margin:18px 0 9px; }
+.movie-drawers { margin-top:16px; gap:0; border-top:2px solid var(--paper); }
+.movie-drawers details {
+  border-top:0;
+  border-bottom:1px solid var(--line-strong);
+  padding:10px 0;
+}
+.movie-drawers details:last-child { border-bottom:1px solid var(--line-strong); }
+.movie-drawers summary {
+  color:var(--paper);
+  font-weight:600;
+  font-size:.62rem;
+  letter-spacing:.12em;
+}
+.drawer-copy { font-family:var(--serif); color:var(--paper-dim); }
+.detail-tags span {
+  border-radius:0;
+  border-color:var(--line-strong);
+  text-transform:uppercase;
+  font-size:.57rem;
+}
+.rating-number { color:var(--stamp-2); font-family:var(--display); font-weight:700; }
+
+/* DEALER — cheap printed ticket / red stamp */
+.sealed-ticket {
+  border-radius:0;
+  border:2px solid var(--paper);
+  color:var(--ink);
+  background:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.025) 0 1px,transparent 1px 4px),
+    var(--paper);
+  box-shadow:10px 12px 0 rgba(0,0,0,.42);
+}
+.sealed-ticket span,.sealed-ticket small { color:#5f5750; }
+.sealed-ticket strong {
+  font-family:var(--display);
+  color:var(--stamp);
+  font-weight:800;
+  letter-spacing:-.03em;
+  transform:rotate(-2deg);
+}
+.sealed-ticket:hover {
+  border-color:var(--paper);
+  transform:rotate(.35deg) translate(-2px,-3px);
+}
+.dealer-reveal img,.dealer-reveal>.poster-fallback {
+  border-radius:0;
+  border:1px solid var(--line-strong);
+  box-shadow:7px 8px 0 rgba(0,0,0,.35);
+}
+.dealer-reveal h3 {
+  font-family:var(--display);
+  font-weight:780;
+  text-transform:uppercase;
+  letter-spacing:-.05em;
+}
+
+/* Footer fades like microprint. */
+.footer {
+  font-size:.57rem;
+  color:#665f57;
+  border-top:1px solid rgba(231,223,210,.12);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+/* Mobile: preserve handbill hierarchy without making it hostile. */
+@media (max-width:760px) {
+  .shell { padding:15px 14px 50px; }
+  header.topbar { align-items:flex-end; }
+  .brand small { display:block; }
+  .brand h1 { font-size:1.75rem; }
+
+  .viewer-grid-simple { max-width:none; }
+  .viewer-card-simple { min-height:22vh; }
+  .viewer-card-simple .viewer-name { font-size:clamp(3.8rem,18vw,6.6rem); }
+
+  .room-head { padding:35px 0 16px; }
+  .room-head h2 { font-size:clamp(3.1rem,14vw,5.2rem); }
+
+  .route-grid-primary { grid-template-columns:1fr; }
+  .route-card.hero-route:first-child {
+    border-right:0;
+    border-bottom:2px solid var(--paper);
+  }
+  .route-card.hero-route { min-height:120px; }
+  .route-grid-secondary { grid-template-columns:1fr; }
+  .route-card.small-route {
+    border-right:0;
+    border-bottom:1px solid var(--line-strong);
+  }
+  .route-card.small-route:last-child { border-bottom:0; }
+
+  .choice-grid { grid-template-columns:1fr; }
+  .choice { border-right:0; min-height:98px; }
+
+  .result-head { align-items:flex-start; }
+  .result-head h2 { font-size:clamp(2.9rem,14vw,4.8rem); }
+  .controls {
+    width:100%;
+    border-left:0;
+    border-top:1px solid var(--line);
+    padding:10px 0 0;
+  }
+
+  .poster-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+
+  .movie-modal { width:100%; max-height:94vh; border-left:0;border-right:0;box-shadow:none; }
+  .movie-modal .modal-grid { grid-template-columns:1fr; }
+  .movie-modal .modal-poster { padding:15px 15px 0; }
+  .movie-modal .modal-poster img,
+  .movie-modal .modal-poster>.poster-fallback { width:min(40vw,155px); }
+  .movie-modal .modal-body { padding:17px 17px 25px; }
+  .movie-title { font-size:clamp(2.7rem,13vw,4.4rem); }
+
+  .spark span { font-size:.52rem; }
+}
+
+@media (min-width:761px) {
+  /* On desktop the poster itself is the loud thing; annotation appears on intent. */
+  .poster-card .spark { opacity:.18; transition:opacity .12s ease; }
+  .poster-card:hover .spark { opacity:1; }
+}
