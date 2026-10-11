@@ -201,6 +201,21 @@ These definitions are deliberate. Do not loosen them into generic OR-matching wi
 
 Mood rules should answer **"what is good to watch when I feel this way?"** rather than **"does the film possess any trait associated with this mood?"**
 
+
+### Emotional family calibration
+
+- **tender** — Genuine gentleness toward people: vulnerability, care, affection, forgiveness, fragility, small human gestures. Not merely "emotional."
+- **lonely** — As a viewer mood, loneliness means desiring company. Recommend warmth, people, connection, presence, and affectionate human contact rather than films that merely depict isolation.
+- **romantic** — Desire, intimacy, courtship, longing, attachment, or emotional gravity between people. It need not be a conventional romance and is not automatically tender.
+- **beautiful-damage** — Broken people, damaged lives, addiction, grief, instability, or self-destruction held with genuine beauty or humanity. Not simply dark or sad.
+- **emotional-charge** — A film that induces very strong, powerful emotions, positive or negative. This describes intensity, not emotional direction.
+- **nostalgic** — Longing for a past world, period, youth, place, or former self. Not simply an old film.
+- **homesick** — As a viewer mood, missing home should be met with warmth, belonging, family, return, familiar rituals, memory, and a kind of joyful sorrow.
+- **depressed** — As a viewer mood, the film should gently help the viewer out of depression: meet them where they are, understand the heaviness, then slowly lead them toward life. Avoid forced cheerfulness and avoid simply mirroring despair.
+- **angry** — Rage, rebellion, resentment, injustice, confrontation, or social fury as an emotional engine. Not simply violence or loudness.
+- **playful** — Formal games, wit, absurdity, mischief, imaginative structure, visual jokes, genre play. Not synonymous with comedy.
+- **tender-weirdos** — Affectionate cinema about outsiders, eccentrics, misfits, odd communities, or strange characters where the film fundamentally loves them rather than gawks at them.
+
 ## Recommendation engine
 
 The engine is custom and profile-aware.
