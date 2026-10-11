@@ -291,41 +291,91 @@
 
   const GENERIC_SIMILAR_TAGS = new Set([
     '20s','30s','40s','50s','60s','70s','80s','90s',
-    '1920s','1930s','1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s','2020s',
-    'dark','stylish','playful','emotional-charge'
+    '1920s','1930s','1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s','2020s'
+  ]);
+  const SOFT_SIMILAR_TAGS = new Set(['dark','stylish','playful','tender','emotional-charge']);
+  const HIGH_ENERGY_TAGS = new Set(['kinetic','rocket-fuel','elegant-panic','y2k-club','action']);
+  const LOW_ENERGY_TAGS = new Set(['slow','sleepy','harmonious','tender','lonely','low-key']);
+  const SIGNATURE_SIMILAR_TAGS = new Set([
+    '25th-hour','liminal','dream','night-city','beautiful-damage','tender-weirdos',
+    'counterculture','psychosexual','brainfuck','esoteric','underground','cosmic',
+    'body-horror','docs-weird','y2k-club','harmonious','lonely','cyber','c-films',
+    'unwatchable','low-key','metaphysical','dialogue'
   ]);
 
-  const HIGH_ENERGY_TAGS = new Set(['kinetic','rocket-fuel','elegant-panic','y2k-club','action']);
-  const LOW_ENERGY_TAGS = new Set(['slow','sleepy','harmonious','tender','lonely']);
+  const SIMILAR_TAG_COUNTS = (() => {
+    const counts={};
+    for(const film of FILMS) for(const tag of film.tags||[]) counts[tag]=(counts[tag]||0)+1;
+    return counts;
+  })();
 
-  function similarEnough(anchor, film){
-    const a=anchor.tags.filter(t=>!GENERIC_SIMILAR_TAGS.has(t));
-    const b=new Set(film.tags.filter(t=>!GENERIC_SIMILAR_TAGS.has(t)));
-    const shared=a.filter(t=>b.has(t));
-
-    // Multiple meaningful overlaps are enough on their own.
-    if(shared.length>=2) return true;
-
-    // One overlap can work only when the films also live in a compatible energetic register.
-    if(shared.length===1){
-      const aHigh=a.some(t=>HIGH_ENERGY_TAGS.has(t));
-      const bHigh=film.tags.some(t=>HIGH_ENERGY_TAGS.has(t));
-      const aLow=a.some(t=>LOW_ENERGY_TAGS.has(t));
-      const bLow=film.tags.some(t=>LOW_ENERGY_TAGS.has(t));
-
-      // Prevent obvious collisions like Lost in Translation -> Run Lola Run.
-      if((aLow && bHigh) || (aHigh && bLow)) return false;
-
-      const strongShared=new Set([
-        'liminal','dream','25th-hour','night-city','beautiful-damage','tender-weirdos',
-        'counterculture','psychosexual','brainfuck','esoteric','underground','cosmic',
-        'body-horror','docs-weird','y2k-club','harmonious','lonely'
-      ]);
-      return strongShared.has(shared[0]);
-    }
-
-    return false;
+  function similarityTagWeight(tag){
+    if(GENERIC_SIMILAR_TAGS.has(tag)) return 0;
+    let weight=Math.log((FILMS.length+4)/((SIMILAR_TAG_COUNTS[tag]||1)+4));
+    if(SOFT_SIMILAR_TAGS.has(tag)) weight*=.35;
+    if(SIGNATURE_SIMILAR_TAGS.has(tag)) weight*=1.2;
+    return Math.max(.15,Math.min(3.2,weight));
   }
+
+  function similarityScore(anchor,film){
+    if(!anchor || !film || anchor===film) return -99;
+    const aTags=(anchor.tags||[]).filter(t=>!GENERIC_SIMILAR_TAGS.has(t));
+    const bTags=(film.tags||[]).filter(t=>!GENERIC_SIMILAR_TAGS.has(t));
+    const bSet=new Set(bTags);
+    const shared=aTags.filter(t=>bSet.has(t));
+    if(!shared.length) return -99;
+
+    const sharedWeight=shared.reduce((sum,t)=>sum+similarityTagWeight(t),0);
+    const aWeight=aTags.reduce((sum,t)=>sum+similarityTagWeight(t),0);
+    const bWeight=bTags.reduce((sum,t)=>sum+similarityTagWeight(t),0);
+    const coverage=sharedWeight/Math.max(1,Math.min(aWeight,bWeight));
+
+    let score=sharedWeight+coverage*2.6;
+
+    const aHigh=aTags.some(t=>HIGH_ENERGY_TAGS.has(t));
+    const bHigh=bTags.some(t=>HIGH_ENERGY_TAGS.has(t));
+    const aLow=aTags.some(t=>LOW_ENERGY_TAGS.has(t));
+    const bLow=bTags.some(t=>LOW_ENERGY_TAGS.has(t));
+    if((aLow&&bHigh)||(aHigh&&bLow)) score-=4;
+
+    if(anchor.director===film.director) score+=1.5;
+    if(Math.floor(anchor.year/10)===Math.floor(film.year/10)) score+=.15;
+
+    return score;
+  }
+
+  function similarEnough(anchor,film){
+    return similarityScore(anchor,film)>=2.5;
+  }
+
+  function chooseSimilarResults(anchor,pool){
+    const ranked=pool
+      .map(f=>({film:f,similarity:similarityScore(anchor,f),taste:personalScore(f,[])}))
+      .filter(x=>x.similarity>-90)
+      .sort((a,b)=>(b.similarity+b.taste*.08)-(a.similarity+a.taste*.08));
+
+    const strong=ranked.filter(x=>x.similarity>=2.5);
+    const candidates=(strong.length>=5?strong:ranked).slice(0,24);
+    if(!candidates.length) return [];
+
+    // Similarity dominates; taste only nudges. Randomness keeps reshuffle useful without
+    // letting weak semantic matches float above strong ones.
+    const shuffled=[...candidates]
+      .map(x=>({x,key:Math.random()+Math.max(0,x.similarity)/7}))
+      .sort((a,b)=>b.key-a.key)
+      .map(y=>y.x.film);
+
+    const out=[],directors={};
+    for(const film of shuffled){
+      const d=film.director.split(',')[0];
+      if((directors[d]||0)>=1 && out.length<4) continue;
+      out.push(film);
+      directors[d]=(directors[d]||0)+1;
+      if(out.length>=5) break;
+    }
+    return out;
+  }
+
   const MOOD_GATES = {
     wired: f => {
       // Wired means actual nervous-system energy. Night-city / cyber / Y2K texture alone is not enough.
@@ -438,7 +488,10 @@
   
     let chosen;
     state.resultRoles={};
-    if(state.viewer==='both' && fresh.length>=5){
+    if(state.category?.type==='similar'){
+      const anchor=FILMS.find(f=>f.title===state.category.id);
+      chosen=chooseSimilarResults(anchor,fresh);
+    } else if(state.viewer==='both' && fresh.length>=5){
       chosen=pickJointRoleFilms(fresh,tags);
     } else {
       let scored = fresh.map(f=>({film:f,score:personalScore(f,tags)})).sort((a,b)=>b.score-a.score);
