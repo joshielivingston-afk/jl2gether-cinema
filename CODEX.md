@@ -181,6 +181,26 @@ Keep these weird and specific.
 
 ---
 
+
+## Semantic tag glossary — first calibrated family
+
+These definitions are deliberate. Do not loosen them into generic OR-matching without discussing it first.
+
+- **kinetic** — The movie itself has propulsion: cutting, camera, dialogue, plot, performance, or rhythm creates forward motion. Not merely exciting subject matter.
+- **rocket-fuel** — A stronger form of kinetic energy: the film produces an almost physical rush or urge to move, create, or do something afterward. Not simply "action."
+- **elegant-panic** — High stress combined with formal control or style. Anxiety that feels choreographed rather than chaotic. Not generic thriller tension.
+- **slow** — Deliberately low narrative / event density that asks patience and attention. Not synonymous with boring, meditative, or long.
+- **sleepy** — Genuinely pleasant to watch while drowsy: low aggression, soft rhythm, forgiving attention requirements. Dreamlike / slow / liminal alone is not enough.
+- **harmonious** — Equilibrium, connection, peace, soul-warmth, spiritual or human attunement; a sense that something is in tune. Can be quietly life-affirming or deeply connecting. Not merely tender or slow.
+- **dream** — Causality behaves like a dream: associative logic, memory slippage, irrational transitions, emotional rather than literal continuity. Pretty or surreal imagery alone is not enough.
+- **liminal** — Sustained sense of being between states, places, identities, or social times: hotels, corridors, transit, waiting, thresholds, depopulated spaces, transition. Not any lonely or strange film.
+- **25th-hour** — Deep-night altered consciousness: the feeling after normal social time has ended — 3AM, fluorescent emptiness, insomnia, derealization, quiet menace. Not general liminality.
+- **night-city** — Urban nighttime is a meaningful part of the film's sensory identity: streets, taxis, clubs, convenience stores, neon, empty roads. Not a film that merely contains city scenes at night.
+- **y2k** — Late-90s / early-00s cultural-technological texture: early digital life, CRTs, pre-smartphone futurism, internet anxiety, techno aesthetics. Not anything made around 2000.
+- **y2k-club** — Specific nightlife subset: rave / club culture, techno or trip-hop, warehouse energy, cigarettes, youth subculture, pre-millennial electricity. Not generic Y2K fashion or cyber aesthetics.
+
+Mood rules should answer **"what is good to watch when I feel this way?"** rather than **"does the film possess any trait associated with this mood?"**
+
 ## Recommendation engine
 
 The engine is custom and profile-aware.
