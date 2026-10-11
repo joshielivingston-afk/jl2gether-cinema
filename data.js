@@ -60,7 +60,11 @@ const VIBES = [
   ['beautiful-damage','Beautifully Damaged','🥀','People are a mess; the movie knows exactly how beautiful that can be.'],
   ['tender-weirdos','Tender Weirdos','🧃','Odd people loved without sanding off their oddness.'],
   ['end-times','End of the World at 3AM','📺','Millennial dread, broadcasts, empty streets and existential static.'],
-  ['elegant-panic','Elegant Panic','🩸','Stress, style and forward motion with a pulse you can dance to.']
+  ['elegant-panic','Elegant Panic','🩸','Stress, style and forward motion with a pulse you can dance to.'],
+  ['girly-pop','Girly Pop','🎀','Sleepover energy, cozy sweetness, friendship, crushes, glitter and soft-chaos comfort.'],
+  ['camp','Camp','💅','Big choices, delicious excess, theatrical sincerity and taste pushed past good behavior.'],
+  ['childhood-nostalgia','Childhood Nostalgia','🧸','Kid-world wonder, comfort watches, strange little adventures and the ache of being young again.'],
+  ['musical-vibe','Sing It Like You Mean It','🎤','Movies where feeling gets too large for dialogue and has to become music.']
 ];
 
 const DECADES = ['1920s','1930s','1940s','1950s','1960s','1970s','1980s','1990s','2000s','2010s','2020s'];
@@ -375,7 +379,11 @@ const CATEGORY_MAP = {
   'beautiful-damage': ['beautiful-damage'],
   'tender-weirdos': ['tender-weirdos','tender','weird'],
   'end-times': ['end-times'],
-  'elegant-panic': ['elegant-panic','kinetic']
+  'elegant-panic': ['elegant-panic','kinetic'],
+  'girly-pop': ['tender','playful','romantic','nostalgic','comedy','harmonious'],
+  'camp': ['campy'],
+  'childhood-nostalgia': ['nostalgic','playful','tender','harmonious','adventure'],
+  'musical-vibe': ['musical','music']
 };
 
 const MOOD_MAP = {
