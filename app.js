@@ -515,6 +515,10 @@
   function hasAny(f,tags){ return tags.some(t=>f.tags.includes(t)); }
   function relevantToCategory(film,tags){
     const c=state.category;
+    const shelfChild=film.tags.includes('shelf-only-childhood');
+    const shelfMusical=film.tags.includes('shelf-only-musical');
+    if(shelfChild && !(c?.type==='vibe' && c.id==='childhood-nostalgia')) return false;
+    if(shelfMusical && !(c?.type==='vibe' && c.id==='musical-vibe')) return false;
     if(!c || c.type==='random' || c.type==='decade' || c.type==='director') return true;
     if(c.type==='vibe') return (VIBE_GATES[c.id] || (x=>hasAny(x,tags)))(film);
     if(c.type==='mood') {
@@ -1000,7 +1004,7 @@
           </details>
           <details>
             <summary>Tags</summary>
-            <div class="detail-tags compact-tags">${f.tags.slice(0,8).map(t=>`<span>${t}</span>`).join('')}</div>
+            <div class="detail-tags compact-tags">${f.tags.filter(t=>!t.startsWith('shelf-only-')).slice(0,8).map(t=>`<span>${t}</span>`).join('')}</div>
           </details>
         </div>
   
