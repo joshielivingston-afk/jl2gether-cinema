@@ -509,11 +509,8 @@
       (f.tags.includes('playful') && hasAny(f,['romantic','nostalgic','comedy']))
     ),
     'camp': f => f.tags.includes('campy'),
-    'childhood-nostalgia': f => !hasAny(f,['unwatchable','psychosexual','body-horror','macabre']) && (
-      (f.tags.includes('nostalgic') && hasAny(f,['playful','tender','harmonious','adventure','comedy'])) ||
-      (f.tags.includes('playful') && f.tags.includes('tender') && hasAny(f,['dream','adventure','harmonious','tender-weirdos']))
-    ),
-    'musical-vibe': f => f.tags.includes('musical') || (f.tags.includes('music') && !f.tags.includes('documentary') && !f.tags.includes('docs-weird'))
+    'childhood-nostalgia': f => typeof CHILDHOOD_NOSTALGIA_SHELF!=='undefined' && CHILDHOOD_NOSTALGIA_SHELF.has(movieKey(f)),
+    'musical-vibe': f => typeof MUSICALS_SHELF!=='undefined' && MUSICALS_SHELF.has(movieKey(f))
   };
   function hasAny(f,tags){ return tags.some(t=>f.tags.includes(t)); }
   function relevantToCategory(film,tags){
