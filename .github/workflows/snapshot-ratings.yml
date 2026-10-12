@@ -8,6 +8,7 @@ on:
       - "catalog-extra.js"
       - "catalog-v04.js"
       - "catalog-v05.js"
+      - "catalog-shelves.js"
       - "scripts/update-ratings.js"
       - ".github/workflows/snapshot-ratings.yml"
   workflow_dispatch:
