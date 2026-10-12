@@ -120,5 +120,10 @@ const PROFILE_SHELF_FILMS = [
 ];
 
 for (const film of PROFILE_SHELF_FILMS) {
-  if (!FILMS.some(existing => existing.title === film.title && existing.year === film.year)) FILMS.push(film);
+  const key=film.title+'|'+film.year;
+  if (!FILMS.some(existing => existing.title === film.title && existing.year === film.year)) {
+    if(CHILDHOOD_NOSTALGIA_SHELF.has(key)) film.tags.push('shelf-only-childhood');
+    if(MUSICALS_SHELF.has(key)) film.tags.push('shelf-only-musical');
+    FILMS.push(film);
+  }
 }
