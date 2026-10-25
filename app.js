@@ -498,7 +498,7 @@
     'brainfuck': f => f.tags.includes('brainfuck'),
     'esoteric': f => hasAny(f,['esoteric','underground']),
     'docs-inspire': f => f.tags.includes('docs-inspire'),
-    'docs-weird': f => f.tags.includes('docs-weird'),
+    'docs-weird': f => f.tags.includes('docs-weird') && (f.tags.includes('documentary') || f.title==='Häxan'),
     'underground-art': f => f.tags.includes('underground'),
     'night-city': f => f.tags.includes('night-city'),
     'beautiful-damage': f => f.tags.includes('beautiful-damage'),
