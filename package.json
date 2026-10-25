@@ -5,7 +5,10 @@
   "description": "The Back Room — a private cinema recommender for Joshie, Julie, and JL²GETHER.",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js",
+    "audit:categories": "node scripts/audit-categories.js",
+    "snapshot:posters": "node scripts/snapshot-posters.js"
   },
   "engines": {
     "node": ">=18"

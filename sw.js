@@ -1,5 +1,5 @@
-const CACHE='jl2gether-v05-5';
-const CORE=['./','./index.html','./styles.css','./data.js','./catalog-extra.js','./catalog-v04.js','./catalog-v05.js','./catalog-shelves.js','./profile-data.js','./ratings-snapshot.js','./app.js','./pwa.js','./manifest.webmanifest','./icon.svg'];
+const CACHE='jl2gether-v05-6';
+const CORE=['./','./index.html','./styles.css','./data.js','./catalog-extra.js','./catalog-v04.js','./catalog-v05.js','./catalog-shelves.js','./profile-data.js','./ratings-snapshot.js','./poster-snapshot.js','./app.js','./pwa.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
@@ -18,3 +18,4 @@ self.addEventListener('fetch',event=>{
     return res;
   }).catch(()=>caches.match(req).then(hit=>hit||caches.match('./index.html'))));
 });
+

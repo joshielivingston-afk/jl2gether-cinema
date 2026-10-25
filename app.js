@@ -16,7 +16,7 @@
       josh: loadJSON('jl2.import.josh', {}),
       julie: loadJSON('jl2.import.julie', {})
     },
-    metaCache: loadJSON('jl2.meta', {}),
+    metaCache: {...(typeof POSTER_SNAPSHOT!=='undefined'?POSTER_SNAPSHOT:{}),...loadJSON('jl2.meta.v2', {})},
     ratingCache: loadJSON('jl2.lb', {}),
     resultSeed: Math.random(),
     seenHistory: (() => { try { return JSON.parse(sessionStorage.getItem('jl2.seen')||'{}'); } catch { return {}; } })(),
@@ -435,79 +435,77 @@
   }
 
   const MOOD_GATES = {
-    wired: f => {
-      // Wired means actual nervous-system energy. Night-city / cyber / Y2K texture alone is not enough.
-      if (f.tags.includes('rocket-fuel') || f.tags.includes('elegant-panic')) return true;
-      if (f.tags.includes('kinetic')) return true;
-      return hasAny(f,['cyber','y2k','night-city']) && hasAny(f,['angry','counterculture','crime','playful','campy']);
+    horny: f => f.tags.includes('psychosexual') || ['In the Mood for Love','Portrait of a Lady on Fire'].includes(f.title),
+    nostalgic: f => {
+      if(f.tags.includes('nostalgic'))return true;
+      const viewers=state.viewer==='both'?['josh','julie']:[state.viewer];
+      return viewers.some(who=>{
+        const r=profileRecord(who,f);
+        return r?.watched && (r.favorite || Number(r.rating)>=4.5 || (r.lists||[]).some(name=>STRONG_LISTS[who]?.[name]>=3));
+      });
     },
-    sleepy: f => {
-      // Sleepy means safe to surrender attention to, not merely dreamlike / liminal.
-      if (f.tags.includes('sleepy') || f.tags.includes('harmonious')) return true;
-      const tooSharp=hasAny(f,['kinetic','rocket-fuel','elegant-panic','horror','macabre','unwatchable','angry','crime','body-horror']);
-      if (tooSharp) return false;
-      if (f.tags.includes('slow') && hasAny(f,['dream','tender','liminal','romantic','cosmic'])) return true;
-      return f.tags.includes('dream') && hasAny(f,['tender','harmonious','romantic']) && !f.tags.includes('dark');
-    },
-    harmonious: f => {
-      // Harmonious is peace + connection + soul-warmth / spiritual attunement.
-      if (f.tags.includes('harmonious')) return true;
-      const abrasive=hasAny(f,['kinetic','rocket-fuel','elegant-panic','horror','macabre','unwatchable','angry','dark']);
-      if (abrasive) return false;
-      if (f.tags.includes('tender') && hasAny(f,['romantic','cosmic','philosophical','documentary','dream'])) return true;
-      return f.tags.includes('cosmic') && hasAny(f,['tender','dream']);
-    },
+    restless: f => hasAny(f,['kinetic','rocket-fuel','elegant-panic']),
+    wired: f => hasAny(f,['kinetic','rocket-fuel','elegant-panic']),
+    // These rooms need affirmative emotional evidence, not a broad OR of adjacent tags.
+    sleepy: f => hasAny(f,['sleepy','harmonious']) && !hasAny(f,['kinetic','rocket-fuel','elegant-panic','horror','macabre','unwatchable','angry','body-horror']),
+    harmonious: f => f.tags.includes('harmonious'),
+    'in-love': f => f.tags.includes('romantic'),
+    philosophical: f => hasAny(f,['philosophical','metaphysical']),
+    cosmic: f => hasAny(f,['cosmic','metaphysical']),
+    angry: f => f.tags.includes('angry') || (f.tags.includes('counterculture') && hasAny(f,['political','kinetic'])),
+    macabre: f => f.tags.includes('macabre'),
+    afraid: f => hasAny(f,['afraid','horror']),
+    tender: f => hasAny(f,['tender','tender-weirdos']),
+    campy: f => hasAny(f,['campy','c-films']),
     lonely: f => {
-      // Feeling lonely means wanting company, not more isolation.
       const abrasive=hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel','elegant-panic']);
-      if (abrasive) return false;
-      if (f.tags.includes('harmonious')) return true;
-      if (f.tags.includes('tender') && hasAny(f,['romantic','playful','comedy','nostalgic','tender-weirdos'])) return true;
-      return f.tags.includes('playful') && hasAny(f,['comedy','tender-weirdos','romantic']);
+      if(abrasive)return false;
+      return f.tags.includes('harmonious') || (f.tags.includes('tender') && hasAny(f,['playful','comedy','tender-weirdos']));
     },
     homesick: f => {
-      // Homesick means longing for home, so recommend warmth, belonging, return, and joyful sorrow.
-      const abrasive=hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel']);
-      if (abrasive) return false;
-      if (f.tags.includes('homesick')) return true;
-      if (f.tags.includes('harmonious') && hasAny(f,['tender','nostalgic','romantic'])) return true;
-      if (f.tags.includes('nostalgic') && hasAny(f,['tender','playful','romantic','comedy'])) return true;
-      return f.tags.includes('tender') && f.tags.includes('playful');
+      if(hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel']))return false;
+      return f.tags.includes('homesick') || (f.tags.includes('harmonious') && hasAny(f,['tender','nostalgic']));
     },
     depressed: f => {
-      // Meet the viewer where they are, then gently lead them outward.
-      const tooHarsh=hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel','elegant-panic','body-horror']);
-      if (tooHarsh) return false;
-      if (f.tags.includes('harmonious')) return true;
-      if (f.tags.includes('tender') && hasAny(f,['philosophical','nostalgic','romantic','playful','comedy','tender-weirdos'])) return true;
-      return f.tags.includes('philosophical') && hasAny(f,['tender','dream','harmonious']);
+      // Curated paths back toward life. Philosophical, tender, or nostalgic alone
+      // can also describe devastating films, so they cannot admit a film here.
+      if(hasAny(f,['unwatchable','macabre','horror','angry','rocket-fuel','elegant-panic','body-horror','depressed']))return false;
+      return f.tags.includes('harmonious') || new Set([
+        'Ikiru','Napoleon Dynamite','The Grand Budapest Hotel','Fantastic Mr. Fox',
+        'Before Sunrise','Before Sunset','Amélie','Frances Ha','The Taste of Tea',
+        'The Man from Earth','Night on Earth','Girlfriends','Fremont',
+        'The King and the Mockingbird','The Secret Life of Walter Mitty'
+      ]).has(f.title);
     }
   };
 
+  // Sleepovers, friendship, crushes, and soft-chaos comfort, rather than all romance.
+  const GIRLY_POP_SHELF = new Set([
+    'Kamikaze Girls|2004','Frances Ha|2012','Amélie|2001','Girlfriends|1978',
+    'The Parent Trap|1998','Freaky Friday|2003','Roman Holiday|1953',
+    'The Princess Bride|1987','Hocus Pocus|1993'
+  ]);
   const VIBE_GATES = {
     '25th-hour': f => f.tags.includes('25th-hour') || (f.tags.includes('night-city') && hasAny(f,['liminal','dream','lonely'])),
     'unwatchable': f => f.tags.includes('unwatchable'),
     'c-films': f => f.tags.includes('c-films'),
     'y2k-club': f => f.tags.includes('y2k-club'),
-    '90s-kinetic': f => f.tags.includes('90s') && hasAny(f,['kinetic','counterculture','weird','y2k','cyber']),
-    '70s-rocket': f => f.tags.includes('70s') && hasAny(f,['kinetic','rocket-fuel','crime','paranoid','angry']),
+    '90s-kinetic': f => f.year>=1990 && f.year<2000 && hasAny(f,['kinetic','rocket-fuel']),
+    '70s-rocket': f => f.year>=1970 && f.year<1980 && hasAny(f,['kinetic','rocket-fuel']),
     'liminal': f => f.tags.includes('liminal'),
     'dream-logic': f => f.tags.includes('dream'),
-    'rocket-fuel': f => f.tags.includes('rocket-fuel') || f.tags.includes('elegant-panic') || (f.tags.includes('kinetic') && hasAny(f,['angry','counterculture','crime','y2k-club','campy'])),
+    'rocket-fuel': f => f.tags.includes('rocket-fuel'),
     'brainfuck': f => f.tags.includes('brainfuck'),
     'esoteric': f => hasAny(f,['esoteric','underground']),
-    'docs-inspire': f => hasAny(f,['docs-inspire','documentary']) && !f.tags.includes('docs-weird'),
-    'docs-weird': f => f.tags.includes('docs-weird'),
+    'docs-inspire': f => f.tags.includes('docs-inspire'),
+    'docs-weird': f => f.tags.includes('docs-weird') && (f.tags.includes('documentary') || f.title==='Häxan'),
     'underground-art': f => f.tags.includes('underground'),
     'night-city': f => f.tags.includes('night-city'),
     'beautiful-damage': f => f.tags.includes('beautiful-damage'),
     'tender-weirdos': f => f.tags.includes('tender-weirdos') || (f.tags.includes('tender') && f.tags.includes('weird')),
     'end-times': f => f.tags.includes('end-times'),
-    'elegant-panic': f => f.tags.includes('elegant-panic') || (f.tags.includes('kinetic') && hasAny(f,['stylish','night-city','crime'])),
-    'girly-pop': f => !hasAny(f,['unwatchable','macabre','body-horror','angry']) && (
-      (f.tags.includes('tender') && hasAny(f,['playful','romantic','nostalgic','comedy','harmonious','tender-weirdos'])) ||
-      (f.tags.includes('playful') && hasAny(f,['romantic','nostalgic','comedy']))
-    ),
+    'elegant-panic': f => f.tags.includes('elegant-panic'),
+    'girly-pop': f => GIRLY_POP_SHELF.has(movieKey(f)),
     'camp': f => f.tags.includes('campy'),
     'childhood-nostalgia': f => typeof CHILDHOOD_NOSTALGIA_SHELF!=='undefined' && CHILDHOOD_NOSTALGIA_SHELF.has(movieKey(f)),
     'musical-vibe': f => typeof MUSICALS_SHELF!=='undefined' && MUSICALS_SHELF.has(movieKey(f))
@@ -517,7 +515,7 @@
     const c=state.category;
     const shelfChild=film.tags.includes('shelf-only-childhood');
     const shelfMusical=film.tags.includes('shelf-only-musical');
-    if(shelfChild && !(c?.type==='vibe' && c.id==='childhood-nostalgia')) return false;
+    if(shelfChild && !(c?.type==='vibe' && (c.id==='childhood-nostalgia' || (c.id==='girly-pop' && GIRLY_POP_SHELF.has(movieKey(film)))))) return false;
     if(shelfMusical && !(c?.type==='vibe' && c.id==='musical-vibe')) return false;
     if(!c || c.type==='random' || c.type==='decade' || c.type==='director') return true;
     if(c.type==='vibe') return (VIBE_GATES[c.id] || (x=>hasAny(x,tags)))(film);
@@ -544,9 +542,7 @@
 
   function chooseResults(tags, predicate=()=>true) {
     let pool = FILMS.filter(predicate).filter(f=>relevantToCategory(f,tags));
-    if(pool.length<5 && state.category?.type==='mood' && (state.category?.tagGroups||[]).length>1){
-      pool=FILMS.filter(predicate).filter(f=>hasAny(f,tags));
-    }
+    // A small intersection is still the requested intersection. Never refill with OR matches.
     if (state.hideWatched) pool = pool.filter(f=>!watchedInfo(f).watched);
   
     const recent = new Set(state.seenHistory[historyKey()]||[]);
@@ -834,6 +830,12 @@
     $('#breakSeal')?.addEventListener('click',()=>{state.dealer.revealed=true;state.seenHistory['dealer']=[movieKey(f),...(state.seenHistory['dealer']||[])].slice(0,30);sessionStorage.setItem('jl2.seen',JSON.stringify(state.seenHistory));renderDealer();});
     $('#acceptDealer')?.addEventListener('click',()=>openMovie(f));
     $('#burnDealer')?.addEventListener('click',()=>{state.dealer.strikes++;const old=movieKey(f);state.dealer.film=pickDealerFilm(old);state.dealer.revealed=false;renderDealer();});
+    if(state.dealer.revealed){
+      const poster=$('.dealer-reveal');
+      const img=poster?.querySelector('img');
+      if(img)img.addEventListener('error',()=>showPosterFallback(poster,f,img),{once:true});
+      enrichFilm(f).then(meta=>updateFilmPoster(poster,f,meta));
+    }
   }
 
 
@@ -889,6 +891,7 @@
       </div>
       ${moodCombineBar()}
       <div class="poster-grid" id="posterGrid">${state.results.map(movieCard).join('')}</div>
+      ${state.results.length===0?'<p class="copy">No films fit this combination. Try another mood or include watched films.</p>':''}
     </section>`);
     $('#backBtn').addEventListener('click',()=>{state.route=state.category?.type||'home';render();});
     bindMoodCombine();
@@ -912,7 +915,7 @@
     const key=movieKey(f), meta=state.metaCache[key], wi=watchedInfo(f);
     const img=meta?.poster;
     return `<article class="poster-card" data-key="${escapeAttr(key)}" title="${escapeAttr(f.title)}">
-      ${img?`<img src="${escapeAttr(img)}" alt="${escapeAttr(f.title)} poster" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'poster-fallback',textContent:${JSON.stringify(f.title)}}))">`:`<div class="poster-fallback">${f.title}</div>`}
+      ${img?`<img src="${escapeAttr(img)}" alt="${escapeAttr(f.title)} poster" loading="lazy">`:`<div class="poster-fallback">${escapeAttr(f.title)}</div>`}
       ${wi.watched?'<i class="watched-dot" title="watched"></i>':''}
       ${state.resultRoles[key]?`<div class="role-badge">${state.resultRoles[key]}</div>`:''}
       <div class="spark"><span>${f.emoji} ${f.vibe}</span></div>
@@ -921,40 +924,108 @@
 
   function movieKey(f){ return `${f.title}|${f.year}`; }
   function bindMovieCards(){
-    document.querySelectorAll('.poster-card').forEach(card=>card.addEventListener('click',()=>{const f=FILMS.find(x=>movieKey(x)===card.dataset.key); if(f)openMovie(f);}));
+    document.querySelectorAll('.poster-card').forEach(card=>{
+      const f=FILMS.find(x=>movieKey(x)===card.dataset.key);
+      if(!f)return;
+      card.addEventListener('click',()=>openMovie(f));
+      const img=card.querySelector('img');
+      if(img){
+        img.addEventListener('error',()=>showPosterFallback(card,f,img),{once:true});
+        if(img.complete && !img.naturalWidth)showPosterFallback(card,f,img);
+      }
+    });
+  }
+
+  const POSTER_TIMEOUT=8000;
+  const metadataRequests=new Map();
+  function showPosterFallback(container,f,img){
+    const fallback=document.createElement('div');
+    fallback.className='poster-fallback';fallback.textContent=f.title;
+    if(img?.parentNode===container)img.replaceWith(fallback);
+    const meta=state.metaCache[movieKey(f)];
+    if(meta?.poster===img?.getAttribute('src')){
+      meta.poster=null;
+      try{saveJSON('jl2.meta.v2',state.metaCache);}catch{}
+    }
   }
 
   function preloadPoster(url){
-    if(!url) return Promise.resolve();
-    return new Promise(resolve=>{const img=new Image();img.onload=img.onerror=resolve;img.src=url;});
+    if(!url) return Promise.resolve(false);
+    return new Promise(resolve=>{
+      const img=new Image();
+      let settled=false;
+      const finish=ok=>{if(settled)return;settled=true;clearTimeout(timer);img.onload=img.onerror=null;resolve(ok);};
+      const timer=setTimeout(()=>finish(false),POSTER_TIMEOUT);
+      img.onload=()=>finish(true);img.onerror=()=>finish(false);img.src=url;
+    });
+  }
+
+  function metadataTitle(title){
+    return String(title||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  }
+  function selectMetadata(f,metas){
+    // Never substitute the first search hit (or an unrelated film from the same year).
+    return metas.find(m=>m.type==='movie' && metadataTitle(m.name)===metadataTitle(f.title) &&
+      Number(m.year||String(m.releaseInfo||'').slice(0,4))===f.year) || null;
   }
 
   async function enrichFilm(f,{silent=false}={}){
     const key=movieKey(f);
-    if(state.metaCache[key]?.poster) {
-      if(!silent) preloadPoster(state.metaCache[key].poster);
-      return state.metaCache[key];
+    if(state.metaCache[key]?.poster)return state.metaCache[key];
+    if(metadataRequests.has(key))return metadataRequests.get(key);
+    const request=(async()=>{
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),POSTER_TIMEOUT);
+      try{
+        const q=encodeURIComponent(f.title);
+        const r=await fetch(`https://v3-cinemeta.strem.io/catalog/movie/top/search=${q}.json`,{cache:'force-cache',signal:controller.signal});
+        if(!r.ok)return null;
+        const data=await r.json();
+        const m=selectMetadata(f,data.metas||[]);
+        if(!m)return null;
+        const meta={poster:m.poster||null,imdbId:m.imdb_id||m.id||null,description:m.description||null,name:m.name||f.title};
+        state.metaCache[key]=meta;
+        // Storage quota must not prevent a successfully fetched poster from appearing.
+        try{saveJSON('jl2.meta.v2',state.metaCache);}catch{}
+        return meta;
+      }catch{return null;}
+      finally{clearTimeout(timer);}
+    })();
+    metadataRequests.set(key,request);
+    try{return await request;}finally{metadataRequests.delete(key);}
+  }
+
+  async function updateFilmPoster(container,f,meta){
+    if(!container || !meta?.poster)return;
+    const url=meta.poster;
+    if(!await preloadPoster(url)){
+      const img=container.querySelector('img');
+      if(img?.getAttribute('src')===url)showPosterFallback(container,f,img);
+      if(state.metaCache[movieKey(f)]?.poster===url){
+        state.metaCache[movieKey(f)].poster=null;
+        try{saveJSON('jl2.meta.v2',state.metaCache);}catch{}
+      }
+      return;
     }
-    try {
-      const q=encodeURIComponent(f.title);
-      const r=await fetch(`https://v3-cinemeta.strem.io/catalog/movie/top/search=${q}.json`,{cache:'force-cache'});
-      if(!r.ok) throw new Error('metadata');
-      const data=await r.json();
-      const metas=(data.metas||[]).filter(m=>m.type==='movie');
-      let m=metas.find(x=>Number((x.releaseInfo||'').slice(0,4))===f.year || Number(x.year)===f.year) || metas[0];
-      if(!m) return null;
-      state.metaCache[key]={ poster:m.poster||m.background||null, imdbId:m.imdb_id||m.id||null, description:m.description||null, name:m.name||f.title };
-      saveJSON('jl2.meta',state.metaCache);
-      if(!silent) preloadPoster(state.metaCache[key].poster);
-      return state.metaCache[key];
-    } catch(e) { return null; }
+    if(!container.isConnected)return;
+    const old=container.querySelector('img, .poster-fallback');
+    if(!old)return;
+    const img=document.createElement('img');
+    img.alt=`${f.title} poster`;
+    img.addEventListener('error',()=>showPosterFallback(container,f,img),{once:true});
+    img.src=url;
+    old.replaceWith(img);
   }
 
   async function hydrateResultPosters(films){
-    const signature=films.map(movieKey).join('||');
-    await Promise.allSettled(films.map(f=>enrichFilm(f,{silent:true})));
-    await Promise.allSettled(films.map(f=>preloadPoster(state.metaCache[movieKey(f)]?.poster)));
-    if(state.route==='results' && state.results.map(movieKey).join('||')===signature) renderResults();
+    const grid=$('#posterGrid');
+    if(!grid)return;
+    // Each card resolves independently; preserve controls, focus, and scroll position.
+    await Promise.allSettled(films.map(async f=>{
+      const card=[...grid.querySelectorAll('.poster-card')].find(el=>el.dataset.key===movieKey(f));
+      const meta=await enrichFilm(f,{silent:true});
+      if(state.route==='results')await updateFilmPoster(card,f,meta);
+    }));
   }
 
   function renderReactionPanel(f,modal){
@@ -1026,7 +1097,10 @@
       state.route='results';
       chooseResults(f.tags,x=>x.title!==f.title);
     });
-    enrichFilm(f).then(()=>{});
+    const poster=$('.modal-poster',modal);
+    const posterImg=poster.querySelector('img');
+    if(posterImg)posterImg.addEventListener('error',()=>showPosterFallback(poster,f,posterImg),{once:true});
+    enrichFilm(f).then(meta=>updateFilmPoster(poster,f,meta));
   }
 
   function perfectSentence(f,meta){
