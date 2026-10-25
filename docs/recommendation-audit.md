@@ -21,13 +21,13 @@ Scope: all 867 catalogue records, 21 moods, 23 vibes, all three viewers, and eve
 - Horny retains dark psychosexual films and selected charged romances. Innocent romance alone no longer qualifies.
 - Nostalgic admits an explicitly nostalgic atmosphere or strong personal watched/favorite history. Release-era tags alone no longer qualify. Personal evidence is viewer-specific; joint mode accepts either partner's history.
 
-Weird Documentaries includes mockumentary/found-footage entries such as Noroi and Occult. This existing interpretation is unchanged; a future calibration question is whether fictional documentary forms belong.
+Weird Documentaries now requires nonfiction documentary evidence. Noroi, Occult, and Something in the Dirt no longer qualify. Häxan remains an explicitly admitted historical nonfiction essay using dramatized reconstructions.
 
 ## Coverage and reproducible samples
 
 Run `npm test` for network-independent checks and `npm run audit:categories` for a seeded JSON report containing every admitted film and one batch per viewer/category. Tests cover 2,112 individual-category batches, 630 mixed-mood batches (all 210 pairs across three viewers), plus decade and diversity checks. Category fixtures include positive and negative real films. They are editorial calibration examples, not mathematical ground truth.
 
-The original app fails 22 of the 27 recommendation checks; the revised app passes them. Poster regressions separately simulate stalled/failing requests, quota errors, wrong-film search results, independent card loading, and detached cards/modals.
+The original app fails 25 of the 30 recommendation checks; the revised app passes them. Poster regressions separately simulate stalled/failing requests, quota errors, wrong-film search results, independent card loading, and detached cards/modals.
 
 Candidate counts below use joint mode. Personal Nostalgic counts differ by viewer.
 
@@ -66,14 +66,14 @@ Candidate counts below use joint mode. Personal Nostalgic counts differ by viewe
 | vibe | WTF / Brainfuck | 78 → 78 | Oldboy (2003); Everything Everywhere All at Once (2022); Enemy (2013); Being John Malkovich (1999); Brazil (1985) |
 | vibe | Weird / Esoteric / Underground | 117 → 117 | The Holy Mountain (1973); Mysterious Skin (2004); Black Narcissus (1947); Mishima: A Life in Four Chapters (1985); Gummo (1997) |
 | vibe | Documentaries That Switch You On | 41 → 14 | Marwencol (2010); American Movie (1999); Koyaanisqatsi (1982); Encounters at the End of the World (2007); Man with a Movie Camera (1929) |
-| vibe | Weird Documentaries | 21 → 21 | Hands on a Hardbody: The Documentary (1997); The Act of Killing (2012); A Life on the Farm (2022); Gates of Heaven (1978); Occult (2009) |
-| vibe | Underground Arthouse | 70 → 70 | Nowhere (1997); Mysterious Skin (2004); The Holy Mountain (1973); The Wolf House (2018); Funeral Parade of Roses (1969) |
-| vibe | Night City | 136 → 136 | Go (1999); Victoria (2015); Blue Velvet (1986); Last Life in the Universe (2003); Mikey and Nicky (1976) |
-| vibe | Beautifully Damaged | 130 → 130 | Midsommar (2019); Trainspotting (1996); Annette (2021); Black Narcissus (1947); Mysterious Skin (2004) |
-| vibe | Tender Weirdos | 55 → 55 | Titane (2021); Punch-Drunk Love (2002); Kin-dza-dza! (1986); 3 Women (1977); Diamantino (2018) |
-| vibe | End of the World at 3AM | 18 → 18 | Children of Men (2006); The Hole (1998); Colossus: The Forbin Project (1970); Visitor to a Museum (1989); Aniara (2018) |
-| vibe | Elegant Panic | 46 → 11 | Good Time (2017); To Live and Die in L.A. (1985); Z (1969); The Chaser (2008); The Game (1997) |
-| vibe | Girly Pop | 83 → 9 | Frances Ha (2012); Girlfriends (1978); Freaky Friday (2003); Hocus Pocus (1993); The Princess Bride (1987) |
-| vibe | Camp | 42 → 42 | Female Trouble (1974); Streets of Fire (1984); Kamikaze Girls (2004); Careful (1992); Fateful Findings (2013) |
-| vibe | Childhood Nostalgia | 41 → 41 | Finding Nemo (2003); The Goonies (1985); Toy Story (1995); Cars 2 (2011); Monsters, Inc. (2001) |
-| vibe | Sing It Like You Mean It | 13 → 13 | Phantom of the Paradise (1974); Pink Floyd: The Wall (1982); The Wizard of Oz (1939); West Side Story (2021); La La Land (2016) |
+| vibe | Weird Documentaries | 21 → 18 | Hands on a Hardbody: The Documentary (1997); Vernon, Florida (1981); Gates of Heaven (1978); Tickled (2016); A Life on the Farm (2022) |
+| vibe | Underground Arthouse | 70 → 70 | Mysterious Skin (2004); Eraserhead (1977); Born in Flames (1983); Mad God (2021); Freaks (1932) |
+| vibe | Night City | 136 → 136 | Blue Velvet (1986); Good Time (2017); Lost in Translation (2003); Love & Pop (1998); The American Friend (1977) |
+| vibe | Beautifully Damaged | 130 → 130 | Moonlight (2016); There Will Be Blood (2007); Annette (2021); Smithereens (1982); Gummo (1997) |
+| vibe | Tender Weirdos | 55 → 55 | Napoleon Dynamite (2004); Kin-dza-dza! (1986); Gates of Heaven (1978); Diamantino (2018); Fremont (2023) |
+| vibe | End of the World at 3AM | 18 → 18 | Donnie Darko (2001); The Hole (1998); Aniara (2018); Night of the Comet (1984); Colossus: The Forbin Project (1970) |
+| vibe | Elegant Panic | 46 → 11 | Run Lola Run (1998); Good Time (2017); To Live and Die in L.A. (1985); Z (1969); The Chaser (2008) |
+| vibe | Girly Pop | 83 → 9 | Frances Ha (2012); Amélie (2001); Roman Holiday (1953); Hocus Pocus (1993); The Princess Bride (1987) |
+| vibe | Camp | 42 → 42 | The Rocky Horror Picture Show (1975); Streets of Fire (1984); Kamikaze Girls (2004); Terminal USA (1993); Love on a Leash (2011) |
+| vibe | Childhood Nostalgia | 41 → 41 | Spirited Away (2001); Toy Story (1995); The Karate Kid (1984); Cars 2 (2011); Howl's Moving Castle (2004) |
+| vibe | Sing It Like You Mean It | 13 → 13 | Phantom of the Paradise (1974); Annette (2021); The Wizard of Oz (1939); The Sound of Music (1965); La La Land (2016) |
