@@ -8,6 +8,9 @@ function category(type,id){
   return tags;
 }
 const cases=[
+  ['vibe','docs-weird','Grey Gardens','Noroi: The Curse'],
+  ['vibe','docs-weird','The Act of Killing','Occult'],
+  ['vibe','docs-weird','Häxan','Something in the Dirt'],
   ['mood','horny','Crash','Roman Holiday'],
   ['mood','horny','In the Mood for Love','Before Sunrise'],
   ['vibe','girly-pop','Kamikaze Girls','Snatch'],
